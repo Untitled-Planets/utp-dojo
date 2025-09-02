@@ -82,7 +82,7 @@ pub struct CollectableTracker {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, DojoStore, Debug)]
 pub struct Vec3 {
     pub x: i128,
     pub y: i128,

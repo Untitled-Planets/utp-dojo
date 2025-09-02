@@ -15,6 +15,25 @@ curl -L https://install.dojoengine.org | bash
 
 ## 🚀 Getting Started
 
+### 0. Install Dependencies (1.7.0-alpha.1)
+From the installation guide at https://book.dojoengine.org/getting-started/installation/ 
+
+```bash
+asdf plugin add katana https://github.com/dojoengine/asdf-katana.git
+asdf plugin add torii https://github.com/dojoengine/asdf-torii.git
+asdf plugin add sozo https://github.com/dojoengine/asdf-sozo.git
+
+asdf install scarb nightly-2025-05-08
+```
+
+Create a `.tools-versions` file containing the follwing:
+```bash
+scarb nightly-2025-05-08
+sozo 1.7.0-alpha.1
+katana 1.7.0-alpha.3
+torii 1.7.0-alpha.3
+```
+
 ### 1. Start Local Devnet
 
 ```bash
@@ -49,4 +68,5 @@ katana
 * Procedural collectable generation per area
 * Inventory and item pickup
 
+## For more information about 1.7.0-alpha.1 migration, visit https://book.dojoengine.org/migration/1.7.0-alpha.1/
 
