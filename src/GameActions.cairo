@@ -324,11 +324,8 @@ pub mod GameActions {
 
         fn player_move(ref self: ContractState, dst: Vec3) {
             println!("-- player_move start");
-            println!("-- player_move start");
             let mut world = self.world_default();
             let player_id = get_caller_address();
-
-            println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
             println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
             let mut player : Player = world.read_model(player_id);
             if (player.status_flags == 0) { // 1st spawn
@@ -338,13 +335,7 @@ pub mod GameActions {
             assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'Player is not walking');
 
             // Get current position from model
-            let mut mut player_pos_model : PlayerPosition = world.read_model(player_id);
-            if (player_pos_model.last_motion == 0) { // 1st spawn
-                player_pos_model.last_motion = get_block_timestamp().into();
-            }
-            println!("model dir is {},{},{}", player_pos_model.dir.x, player_pos_model.dir.y, player_pos_model.dir.z);
-            println!("model pos is {},{},{}", player_pos_model.pos.x, player_pos_model.pos.y, player_pos_model.pos.z);
-            println!("model dst is {},{},{}", player_pos_model.dest.x, player_pos_model.dest.y, player_pos_model.dest.z);
+            let mut player_pos_model : PlayerPosition = world.read_model(player_id);
             if (player_pos_model.last_motion == 0) { // 1st spawn
                 player_pos_model.last_motion = get_block_timestamp().into();
             }
@@ -353,19 +344,14 @@ pub mod GameActions {
             println!("model dst is {},{},{}", player_pos_model.dest.x, player_pos_model.dest.y, player_pos_model.dest.z);
             let model_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
             println!("current pos to {},{},{}", model_pos.x, model_pos.y, model_pos.z);
-            println!("current pos to {},{},{}", model_pos.x, model_pos.y, model_pos.z);
 
             // calculate new dir
             let dif : Vec3 = vec3_sub(dst, model_pos);
             println!("dif is {},{},{}", dif.x, dif.y, dif.z);
-            println!("dif is {},{},{}", dif.x, dif.y, dif.z);
             let len = vec3_fp40_len(dif);
             println!("len is {}", len);
             let mut dir = dif;
-            println!("len is {}", len);
-            let mut dir = dif;
             if (len > 0) {
-                dir = vec3_fp40_div_scalar(dif, len);
                 dir = vec3_fp40_div_scalar(dif, len);
             };
 
@@ -378,7 +364,6 @@ pub mod GameActions {
                 last_motion: get_block_timestamp().into(),
             };
             world.write_model(@new_player_pos);
-            println!("-- player_move done");
             println!("-- player_move done");
         }
 

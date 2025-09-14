@@ -16,11 +16,7 @@ starknet = ">=2.12.1"
 [[target.starknet-contract]]
 sierra = true
 build-external-contracts = ["dojo::world::world_contract::world"]
-<<<<<<< HEAD
-allowed-libfuncs-list.name = "experimental"
-=======
 #allowed-libfuncs-list.name = "experimental"
->>>>>>> e3537f9dba4db69172bacd52d855a24fef64c13b
 
 [dev-dependencies]
 cairo_test = "=2.12.1"
