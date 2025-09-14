@@ -1,21 +1,30 @@
 [package]
-cairo-version = "=2.10.1"
+cairo-version = "=2.12.1"
 name = "utp_dojo"
 version = "0.1.0"
 
-[cairo]
-sierra-replace-ids = true
+[lib]
 
 [scripts]
 migrate = "sozo build && sozo migrate"                      # scarb run migrate
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.3" }
+dojo_macros = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.3" }
+starknet = ">=2.12.1"
 
 [[target.starknet-contract]]
+sierra = true
 build-external-contracts = ["dojo::world::world_contract::world"]
+<<<<<<< HEAD
 allowed-libfuncs-list.name = "experimental"
+=======
+#allowed-libfuncs-list.name = "experimental"
+>>>>>>> e3537f9dba4db69172bacd52d855a24fef64c13b
 
 [dev-dependencies]
-cairo_test = "=2.10.1"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.2" }
+cairo_test = "=2.12.1"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.3" }
+
+[features]
+default = []
