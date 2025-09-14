@@ -43,12 +43,17 @@ func new_player(id):
 		player_local.set_player_id(id)
 		player_local.world = self
 	
-func player_movement(id, src, dst):
+func player_movement(id, src, dst, p_recursive=false):
 	
 	if !(id in players):
 		new_player(id)
 		printt("player move not instanced?", id)
-	
+		if p_recursive:
+			print("Recursive move attempted, aborting")
+			return
+		call_deferred("player_movement", id, src, dst, true)
+		return
+
 	players[id].move_event(src, dst)
 	
 	if id == connection.get_local_id():
@@ -87,8 +92,11 @@ func position_event(pos):
 	elif input_mode == InputModes.ShipLeave:
 		pass
 	
+func respawn():
+	connection.player_move(Vector3())
 
 func _ready():
+	get_node("UI/respawn").connect("pressed", self.respawn)
 	connection = get_node("/root/Connection")
 	connection.world = self
 	player_local

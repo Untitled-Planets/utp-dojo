@@ -12,7 +12,7 @@ Install the toolchain using this guide [Dojo getting started](https://dojoengine
 
 ```bash
 # Run Katana
-katana --dev --dev.no-fee
+katana --dev --dev.no-fee --cartridge.paymaster
 ```
 
 #### Terminal two
