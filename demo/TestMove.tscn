@@ -53,12 +53,20 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="ship_spawn" type="Button" parent="UI"]
+[node name="respawn" type="Button" parent="UI"]
 layout_mode = 0
 offset_left = 970.0
 offset_top = 42.0
 offset_right = 1095.0
 offset_bottom = 87.0
+text = "Respawn"
+
+[node name="ship_spawn" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 971.0
+offset_top = 203.0
+offset_right = 1096.0
+offset_bottom = 248.0
 text = "Spawn Ship
 "
 

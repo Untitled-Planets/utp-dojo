@@ -12,9 +12,8 @@ var status = {
 	"events": false,
 }
 
-const WORLD_CONTRACT = "0x0277d2b8cdb36c6c8cabbf54b63a3fd8424e307f1c2e89849492bf1219cfc7ff"
-#const ACTIONS_CONTRACT = "0x059a285e7f9c13705810433617c0ba1f1d5d1a3bce54afbd20f470d2e7f4e7be"
-const ACTIONS_CONTRACT = "0x0402b2c97cf0bd5b2fa1733504e039d550e7fd2f43e0329fe22f0eabd99121d5"
+const WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
+const ACTIONS_CONTRACT = "0x009c9371a46bf1f798dd8081d85f63536c24d19925d5341a0cdc594589b1dd73"
 
 @export var debug_use_account = false
 var account_addr = "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
@@ -34,10 +33,12 @@ var players = {}
 var world
 
 func _ready() -> void:
-	var dojoc = DojoC.new()
+	var dojo = DojoC.new()
 	rpc = ProjectSettings.get_setting("dojo/config/katana/rpc_url")
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
+	client.world_address = WORLD_CONTRACT
+	controller_account.policies.contract = ACTIONS_CONTRACT
 
 func _set_status(name, val):
 	status[name] = val
@@ -74,7 +75,9 @@ func _on_torii_client_client_disconnected() -> void:
 
 func _on_controller_account_controller_connected(success: bool) -> void:
 	_set_status("controller", success)
+	
 	if success:
+		push_warning(controller_account.chain_id)
 		connected.emit()
 		_get_entities()
 		print("connected!")
@@ -152,7 +155,15 @@ func player_move(pos):
 		account.execute_raw(ACTIONS_CONTRACT, "player_move", params)
 	else:
 		if !status["controller"]:
-			printt("not connected")
+			push_error("not connected")
 			return
 
 		controller_account.execute_from_outside(ACTIONS_CONTRACT, "player_move", params)
+
+
+func _on_account_transaction_executed(success_message: Dictionary) -> void:
+	print(success_message)
+
+
+func _on_account_transaction_failed(error_message: Dictionary) -> void:
+	push_error(error_message)

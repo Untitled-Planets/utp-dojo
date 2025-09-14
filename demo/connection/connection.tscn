@@ -11,26 +11,26 @@ name = "Entity"
 name = "Message"
 
 [sub_resource type="DojoPolicy" id="DojoPolicy_2kgrw"]
-method = "GameActions-player_move"
+method = "player_move"
 
 [sub_resource type="DojoPolicies" id="DojoPolicies_b2hkl"]
 name = "GameActions"
-contract = "0x0402b2c97cf0bd5b2fa1733504e039d550e7fd2f43e0329fe22f0eabd99121d5"
+contract = "0x009c9371a46bf1f798dd8081d85f63536c24d19925d5341a0cdc594589b1dd73"
 policies = Array[DojoPolicy]([SubResource("DojoPolicy_2kgrw")])
 
 [node name="Connection" type="Node"]
 script = ExtResource("1_c7jwa")
-debug_use_account = true
 query = SubResource("DojoQuery_erpqw")
 entity_sub = SubResource("EntitySubscription_erpqw")
 message_sub = SubResource("MessageSubscription_erpqw")
 
 [node name="ToriiClient" type="ToriiClient" parent="."]
 torii_url = "http://127.0.0.1:8080"
-world_address = "0x0277d2b8cdb36c6c8cabbf54b63a3fd8424e307f1c2e89849492bf1219cfc7ff"
+world_address = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
 
 [node name="ControllerAccount" type="ControllerAccount" parent="."]
-chain_id = "WP_UTP_DOJO2"
+rpc_url = "http://localhost:5050"
+chain_id = "KATANA"
 policies = SubResource("DojoPolicies_b2hkl")
 
 [node name="Account" type="Account" parent="."]
@@ -41,3 +41,5 @@ policies = SubResource("DojoPolicies_b2hkl")
 [connection signal="controller_connected" from="ControllerAccount" to="." method="_on_controller_account_controller_connected"]
 [connection signal="controller_disconnected" from="ControllerAccount" to="." method="_on_controller_account_controller_disconnected"]
 [connection signal="provider_status_updated" from="ControllerAccount" to="." method="_on_controller_account_provider_status_updated"]
+[connection signal="transaction_executed" from="Account" to="." method="_on_account_transaction_executed"]
+[connection signal="transaction_failed" from="Account" to="." method="_on_account_transaction_failed"]

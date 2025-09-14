@@ -1,4 +1,4 @@
-use crate::models::Vec3;
+use crate::models::{Vec3};
 
 #[starknet::interface]
 pub trait IGameActions<T> {
@@ -15,20 +15,118 @@ pub trait IGameActions<T> {
 
 #[dojo::contract]
 pub mod GameActions {
-
-    use super::{IGameActions};
+    use super::IGameActions;
     use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
-    use crate::world::{current_pos, vec3_fp40_dist_sq, vec3_fp40_len_sq, vec3_sub, vec3_fp40_len, vec3_fp40_div_scalar, FP_UNIT, FP_UNIT_BITS};
     // We'll implement our own bitwise operations
+    
+    use dojo::world::world;
+    use starknet::get_block_timestamp;
+    use core::num::traits::Pow;
+    use core::num::traits::Sqrt;
     use array::ArrayTrait;
     use core::byte_array::ByteArray;
-    use starknet::get_block_timestamp;
     use starknet::{ContractAddress, get_caller_address};
-
     use dojo::model::{ModelStorage};
     use dojo::event::EventStorage;
     use core::traits::BitAnd;
-    use core::num::traits::Pow;
+
+    const FP_UNIT: i128 = 0x10000000000; // 2^40
+    const FP_UNIT_BITS: u8 = 40;
+
+    fn current_pos(pos: Vec3, dest: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
+        let current_time_u64 = get_block_timestamp();
+        let current_time: u128 = current_time_u64.into();
+        let time_delta : u128 = current_time - last_move;
+        
+        let distance_elapsed : u128 = time_delta * speed;
+        let distance_elapsed_sq: u256 = fp40_sq(distance_elapsed.try_into().unwrap());
+
+        let distance_to_dest_sqf: felt252 = vec3_fp40_dist_sq(pos, dest).try_into().unwrap();
+        let distance_to_dest_sq: u256 = distance_to_dest_sqf.into();
+
+        if (distance_to_dest_sq <= distance_elapsed_sq) {
+            return dest;
+        };
+
+        let distancei :i128 = distance_elapsed.try_into().unwrap();
+        return Vec3 {
+            x: pos.x + fp40_mul(dir.x, distancei),
+            y: pos.y + fp40_mul(dir.y, distancei),
+            z: pos.z + fp40_mul(dir.z, distancei),
+        };
+    }
+
+    fn fp40_mul(a: i128, b: i128) -> i128 {
+        let mut ret = a * b;
+        ret = ret / 2_i128.pow(FP_UNIT_BITS.into());
+        return ret;
+    }
+
+    fn fp40_sq(a: i128) -> u256 {
+        let abs : u256 = abs_value(a).into();
+        let ret = (abs * abs) / 2_u256.pow(FP_UNIT_BITS.into());
+        return ret;
+    }
+
+    fn fp40_sqrt(a: u128) -> u128 {
+        let abs : u256 = a.into() * 2_u256.pow(FP_UNIT_BITS.into());
+        let sqrt = abs.sqrt();
+        return sqrt.try_into().unwrap();
+    }
+
+    fn abs_value(v: i128) -> u128 {
+        if (v < 0) { return (v * -1).try_into().unwrap(); };
+        return v.try_into().unwrap();
+    }
+
+    fn fp40_div(a: i128, b: i128) -> i128 {
+        let a_abs256: u256 = (abs_value(a) * 2_u128.pow(FP_UNIT_BITS.into())).into();
+        let b_abs: u256 = (abs_value(b)).into();
+        let abs_ret = a_abs256 / b_abs;
+        let uret : u128 = abs_ret.try_into().unwrap(); 
+        let ret : i128 = uret.try_into().unwrap();
+        if ( (a < 0) != (b < 0) ) {
+            return ret * -1;
+        };
+        return ret;
+    }
+
+    fn vec3_fp40_div_scalar(v1: Vec3, s: i128) -> Vec3 {
+        let ret = Vec3 {
+            x: fp40_div(v1.x, s),
+            y: fp40_div(v1.y, s),
+            z: fp40_div(v1.z, s),
+        };
+        return ret;
+    }
+
+    fn vec3_fp40_dist_sq(v1: Vec3, v2: Vec3) -> i128 {
+        let dx = v1.x - v2.x;
+        let dy = v1.y - v2.y;
+        let dz = v1.z - v2.z;
+        let distance_squared: u128 = (fp40_sq(dx) + fp40_sq(dy) + fp40_sq(dz)).try_into().unwrap();
+        return distance_squared.try_into().unwrap();
+    }
+
+    fn vec3_fp40_len_sq(vec: Vec3) -> i128 {
+        let d2 = fp40_sq(vec.x) + fp40_sq(vec.y) + fp40_sq(vec.z);
+        let distance_squared: u128 = d2.try_into().unwrap();
+        return distance_squared.try_into().unwrap();
+    }
+
+    fn vec3_fp40_len(vec: Vec3) -> i128 {
+        let d2 : u128 = vec3_fp40_len_sq(vec).try_into().unwrap();
+        let d = fp40_sqrt(d2);
+        return d.try_into().unwrap();
+    }
+
+    fn vec3_sub(v1: Vec3, v2: Vec3) -> Vec3 {
+        return Vec3 {
+            x: v1.x - v2.x,
+            y: v1.y - v2.y,
+            z: v1.z - v2.z,
+        };
+    }
 
     const DEFAULT_REFERENCE_BODY_ID: u128 = 0;
     const MAX_SPAWN: u8 = 128;
@@ -140,8 +238,10 @@ pub mod GameActions {
             //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'ShipNotOccupied');
             // Get ship position to check last motion time
-            let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
+            //let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             //assert(ship_pos.speed > 0, 'ShipMoving');
+            
+            let ship_pos : ShipPosition = world.read_model(spaceship_id);
             let dist2 = vec3_fp40_dist_sq(ship_pos.pos, pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
@@ -165,7 +265,7 @@ pub mod GameActions {
         fn ship_move(ref self: ContractState, spaceship_id: u128, destination: Vec3, p_hyperspeed: bool) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
+            let ship : Spaceship = world.read_model((spaceship_id, player_id));
 
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
@@ -197,10 +297,8 @@ pub mod GameActions {
         }
 
         fn ship_switch_reference_body(ref self: ContractState, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3) {
-
             let mut world = self.world_default();
             let player_id = get_caller_address();
-
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
 
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
@@ -215,7 +313,6 @@ pub mod GameActions {
             world.write_model(@ship);
 
             // TODO new position not checked
-
             let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             ship_pos.pos = position;
             ship_pos.dest = position;
@@ -226,16 +323,12 @@ pub mod GameActions {
         }
 
         fn player_move(ref self: ContractState, dst: Vec3) {
-
             println!("-- player_move start");
             let mut world = self.world_default();
             let player_id = get_caller_address();
-
             println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
-
             let mut player : Player = world.read_model(player_id);
             if (player.status_flags == 0) { // 1st spawn
-
                 player.status_flags = PlayerFlags::OnFoot;
                 world.write_model(@player);
             }
@@ -295,6 +388,7 @@ pub mod GameActions {
             count_seed.append_byte(area_hash.try_into().unwrap());
             count_seed.append_byte(collectable_type.try_into().unwrap());
             //let count_seed = planet.seed + planet.epoc + area_hash + collectable_type.into();
+            
             let count_hash = core::sha256::compute_sha256_byte_array(@count_seed);
             let total_spawned = *count_hash.span().at(7) % MAX_SPAWN.into();
 
@@ -340,7 +434,7 @@ pub mod GameActions {
             //};
             
             let bitfield : u128 = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
-            let mut bit_mask : u128 = 2_u128.pow(collectable_index.into());
+            let bit_mask : u128 = 2_u128.pow(collectable_index.into());
 
             let is_already_collected = (bitfield & bit_mask) != 0;
             assert(!is_already_collected, 'AlreadyCollected');
@@ -349,7 +443,6 @@ pub mod GameActions {
             tracker.bitfield = bitfield | bit_mask;
             tracker.epoc = planet.epoc;
             world.write_model(@tracker);
-
 
             // move to funtcion add_to_inventory
             {
@@ -371,19 +464,16 @@ pub mod GameActions {
                 
                 // Save the updated inventory item
                 world.write_model(@new_item);
-            };
-            
+            }
         }
-
     }
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        /// Use the default namespace "dojo_starter". This function is handy since the ByteArray
+        /// Use the default namespace "utp_dojo". This function is handy since the ByteArray
         /// can't be const.
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"utp_dojo")
         }
     }
-
 }
