@@ -1,5 +1,7 @@
 extends Node3D
 
+var ship_owner
+
 var model_status = 0: set = set_model_flags
 
 var move_dest = null
@@ -12,6 +14,8 @@ enum ShipFlags {
 	Occupied = 4,
 }
 
+func setup(p_owner):
+	ship_owner = p_owner
 
 func set_model_flags(p_flags):
 	set_spawned(p_flags & ShipFlags.Spawned)
@@ -52,5 +56,4 @@ func _process(delta):
 	global_position = pos
 
 func _ready():
-	
 	pass

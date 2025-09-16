@@ -2,12 +2,12 @@ use crate::models::{Vec3};
 
 #[starknet::interface]
 pub trait IGameActions<T> {
-    fn ship_spawn(ref self: T, spaceship_id: u128, spawn_pos: Vec3);
-    fn ship_despawn(ref self: T, spaceship_id: u128);
-    fn ship_board(ref self: T, spaceship_id: u128);
-    fn ship_unboard(ref self: T, spaceship_id: u128, pos: Vec3);
-    fn ship_move(ref self: T, spaceship_id: u128, destination: Vec3, p_hyperspeed: bool);
-    fn ship_switch_reference_body(ref self: T, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3);
+    fn ship_spawn(ref self: T, spawn_pos: Vec3);
+    fn ship_despawn(ref self: T);
+    fn ship_board(ref self: T);
+    fn ship_unboard(ref self: T, pos: Vec3);
+    fn ship_move(ref self: T, destination: Vec3, p_hyperspeed: bool);
+    fn ship_switch_reference_body(ref self: T, reference_body: u128, position: Vec3, direction: Vec3);
     fn player_move(ref self: T, dst: Vec3);
     fn item_collect(ref self: T, player_id: u128, collectable_type: u16, collectable_index: u8);
 }
@@ -155,11 +155,11 @@ pub mod GameActions {
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
 
-        fn ship_spawn(ref self: ContractState, spaceship_id: u128, spawn_pos: Vec3) {
+        fn ship_spawn(ref self: ContractState, spawn_pos: Vec3) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let player : Player = world.read_model(player_id);
-            let mut ship : Spaceship = world.read_model(spaceship_id);
+            let mut ship : Spaceship = world.read_model(player_id);
 
             assert(ship.owner == player_id, 'NotOwner');
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
@@ -180,7 +180,7 @@ pub mod GameActions {
             ship.reference_body = player.reference_body;
             world.write_model(@ship);
 
-            let mut ship_motion : ShipPosition = world.read_model(spaceship_id);
+            let mut ship_motion : ShipPosition = world.read_model(player_id);
             ship_motion.pos = spawn_pos;
             ship_motion.dest = spawn_pos;
             ship_motion.dir = player_pos_model.dir;
@@ -188,10 +188,10 @@ pub mod GameActions {
             world.write_model(@ship_motion);
         }
 
-        fn ship_despawn(ref self: ContractState, spaceship_id: u128) {
+        fn ship_despawn(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let mut ship : Spaceship = world.read_model(spaceship_id);
+            let mut ship : Spaceship = world.read_model(player_id);
             assert(ship.owner == player_id, 'NotOwner');
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'AlreadyDeSpawned');
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
@@ -202,10 +202,10 @@ pub mod GameActions {
             world.write_model(@ship);
         }
 
-        fn ship_board(ref self: ContractState, spaceship_id: u128) {
+        fn ship_board(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
+            let mut ship : Spaceship = world.read_model(player_id);
             
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'ShipNotSpawned');
             //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
@@ -216,7 +216,7 @@ pub mod GameActions {
             assert((player.status_flags & PlayerFlags::OnShip) == 0, 'PlayerAlreadyOnSpaceship');
 
             // check ship position agains player position
-            let ship_pos : ShipPosition = world.read_model(spaceship_id);
+            let ship_pos : ShipPosition = world.read_model(player_id);
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap()); 
 
@@ -231,17 +231,17 @@ pub mod GameActions {
             world.write_model(@player);
         }
 
-        fn ship_unboard(ref self: ContractState, spaceship_id: u128, pos: Vec3) {
+        fn ship_unboard(ref self: ContractState, pos: Vec3) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
+            let mut ship : Spaceship = world.read_model(player_id);
             //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'ShipNotOccupied');
             // Get ship position to check last motion time
             //let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             //assert(ship_pos.speed > 0, 'ShipMoving');
             
-            let ship_pos : ShipPosition = world.read_model(spaceship_id);
+            let ship_pos : ShipPosition = world.read_model(player_id);
             let dist2 = vec3_fp40_dist_sq(ship_pos.pos, pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
@@ -262,16 +262,16 @@ pub mod GameActions {
             world.write_model(@player);
         }
 
-        fn ship_move(ref self: ContractState, spaceship_id: u128, destination: Vec3, p_hyperspeed: bool) {
+        fn ship_move(ref self: ContractState, destination: Vec3, p_hyperspeed: bool) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let ship : Spaceship = world.read_model((spaceship_id, player_id));
+            let ship : Spaceship = world.read_model(player_id);
 
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
             // Get current position from model
-            let mut ship_pos_model : ShipPosition = world.read_model(spaceship_id);
+            let mut ship_pos_model : ShipPosition = world.read_model(player_id);
             let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
             if (p_hyperspeed) {
                 assert(ship.reference_body == DEFAULT_REFERENCE_BODY_ID, 'Hyperspeed not possible');
@@ -286,7 +286,7 @@ pub mod GameActions {
             
             // Update ship position model
             let new_ship_pos = ShipPosition {
-                ship: spaceship_id,
+                owner: player_id,
                 pos: ship_pos,
                 dir: dir,
                 dest: destination,
@@ -296,10 +296,10 @@ pub mod GameActions {
             world.write_model(@new_ship_pos);
         }
 
-        fn ship_switch_reference_body(ref self: ContractState, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3) {
+        fn ship_switch_reference_body(ref self: ContractState, reference_body: u128, position: Vec3, direction: Vec3) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
+            let mut ship : Spaceship = world.read_model(player_id);
 
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
@@ -313,7 +313,7 @@ pub mod GameActions {
             world.write_model(@ship);
 
             // TODO new position not checked
-            let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
+            let mut ship_pos : ShipPosition = world.read_model(player_id);
             ship_pos.pos = position;
             ship_pos.dest = position;
             ship_pos.hyperspeed = false;

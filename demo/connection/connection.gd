@@ -13,7 +13,9 @@ var status = {
 }
 
 const WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
-const ACTIONS_CONTRACT = "0x009c9371a46bf1f798dd8081d85f63536c24d19925d5341a0cdc594589b1dd73"
+const ACTIONS_CONTRACT = "0x05973ae225e8033039063a2462b2135e1935f82cfc64eac0916fbd99f7ec3076"
+const SLOT_CHAIN_ID = "WP_UTP_DOJO2"
+const LOCAL_CHAIN_ID = "KATANA"
 
 @export var debug_use_account = false
 var account_addr = "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
@@ -120,12 +122,19 @@ func _update_player_model(data):
 	var status = data.status_flags
 	world.player_updated(id, status)
 
+func _update_ship_model(data):
+	var owner = data.owner
+	var status = data.status_flags
+	world.ship_updated(owner, status)
+
 func _update_entity(data):
 	for model in data.models:
 		if "utp_dojo-Player" in model:
 			_update_player_model(model["utp_dojo-Player"])
 		elif "utp_dojo-PlayerPosition" in model:
 			_update_position_model(model["utp_dojo-PlayerPosition"])
+		elif "utp_dojo-Spaceship" in model:
+			_update_ship_model(model["utp_dojo-Spaceship"])
 
 func _on_controller_account_controller_disconnected() -> void:
 	_set_status("controller", false)
@@ -147,7 +156,6 @@ func create_subscriptions(events:Callable,entities:Callable) -> void:
 	
 
 func player_move(pos):
-
 	var params = [pos.x, pos.y, pos.z]
 	#var params = [pos.x, pos.y, pos.z]
 
@@ -160,6 +168,29 @@ func player_move(pos):
 
 		controller_account.execute_from_outside(ACTIONS_CONTRACT, "player_move", params)
 
+func ship_move(pos, hyperspeed):
+	
+	var params = [pos.x, pos.y, pos.z, hyperspeed]
+	
+	if account.is_account_valid():
+		account.execute_raw(ACTIONS_CONTRACT, "ship_move", params)
+	else:
+		if !status["controller"]:
+			push_error("not connected")
+			return
+
+		controller_account.execute_from_outside(ACTIONS_CONTRACT, "ship_move", params)
+
+func execute(method, params):
+	if account.is_account_valid():
+		account.execute_raw(ACTIONS_CONTRACT, method, params)
+	else:
+		if !status["controller"]:
+			push_error("not connected")
+			return
+
+		controller_account.execute_from_outside(ACTIONS_CONTRACT, method, params)
+	
 
 func _on_account_transaction_executed(success_message: Dictionary) -> void:
 	print(success_message)

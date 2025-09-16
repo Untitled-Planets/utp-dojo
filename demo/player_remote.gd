@@ -21,7 +21,11 @@ func _process(delta):
 
 func set_model_flags(p_flags):
 	model_status = p_flags
-	
+	if model_status & PlayerFlags.OnFoot:
+		show()
+	elif model_status & PlayerFlags.OnShip:
+		hide()
+
 
 func moveToPoint(delta, speed):
 	var targetPos = navigationAgent.get_next_path_position()
@@ -40,7 +44,7 @@ func set_player_id(p_id):
 func move_event(src, dst):
 	printt("move event ", src, dst)
 	if !navigationAgent:
-		get_node("navigationAgent").set_deferred("target_position", dst)
+		get_node("NavigationAgent3D").set_deferred("target_position", dst)
 		return
 
 	navigationAgent.target_position = dst

@@ -29,7 +29,7 @@ sozo migrate
 
 # Start Torii
 # Replace <WORLD_ADDRESS> with the address of the deployed world from the previous step
-torii --world <WORLD_ADDRESS> --http.cors_origins "*"
+torii --http.cors_origins "*" --world <WORLD_ADDRESS>
 ```
 
 The URLs for katana and torii will be in the deployment output. The contract and world address will be in the output of `sozo inspect`.

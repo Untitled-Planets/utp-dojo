@@ -38,8 +38,6 @@ pub struct PlayerPosition {
 #[dojo::model]
 pub struct Spaceship {
     #[key]
-    pub id: u128,
-    #[key]
     pub owner: ContractAddress,
     pub capacity: u32,
     pub reference_body: u128,
@@ -50,7 +48,7 @@ pub struct Spaceship {
 #[dojo::model]
 pub struct ShipPosition {
     #[key]
-    pub ship: u128,
+    pub owner: ContractAddress,
     pub pos: Vec3,
     pub dir: Vec3,
     pub dest: Vec3,

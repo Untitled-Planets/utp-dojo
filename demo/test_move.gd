@@ -17,6 +17,8 @@ enum InputModes {
 
 var input_mode
 
+const ship_board_distance = 5
+
 func player_updated(id, status):
 	if !(id in players):
 		new_player(id)
@@ -24,6 +26,30 @@ func player_updated(id, status):
 	players[id].model_status = status
 	if id == connection.get_local_id():
 		player_local.model_status = status
+
+func ship_updated(p_owner, status):
+	if !(p_owner in ships):
+		new_ship(p_owner)
+	ships[p_owner].model_status = status
+
+func new_ship(p_owner):
+	if !(p_owner in ships):
+		var node = preload("ship.tscn").instantiate()
+		ships[p_owner] = node
+	else:
+		printt("new ship already instanced?", p_owner)
+		
+	add_child(ships[p_owner])
+	ships[p_owner].setup(p_owner)
+	
+	if ship_local != null:
+		return
+		
+	if p_owner == connection.get_local_id():
+		ship_local = preload("ship_local.tscn").instantiate()
+		add_child(ship_local)
+		ship_local.setup(p_owner)
+		ship_local.world = self
 
 func new_player(id):
 	if !(id in players):
@@ -81,22 +107,50 @@ func _input(event):
 func set_input_mode(p_mode):
 	input_mode = p_mode
 
+func ship_request_spawn(pos):
+	connection.execute("ship_spawn", [pos])
+	pass
+
+func ship_request_leave(pos):
+	connection.execute("ship_unboard", [pos])
+	pass
+
+func ship_request_board(pos):
+	connection.execute("ship_board", [])
+	pass
+
+func ship_clicked(ship):
+	if player_local.position.distance_to(ship.position) > ship_board_distance:
+		position_event(ship.position)
+	if input_mode == InputModes.PlayerMove:
+		ship_request_board(ship.position)
+	else:
+		position_event(ship.position)
+
 func position_event(pos):
 	
 	if input_mode == InputModes.PlayerMove:
 		player_local.move_local(pos)
 	elif input_mode == InputModes.ShipMove:
-		pass
+		ship_local.move_local(pos)
 	elif input_mode == InputModes.ShipSpawn:
-		pass
+		ship_request_spawn(pos)
 	elif input_mode == InputModes.ShipLeave:
-		pass
+		ship_request_leave(pos)
+
+func ship_spawn_pressed():
+	set_input_mode(InputModes.ShipSpawn)
+	
+func ship_despawn_pressed():
+	connection.execute("ship_despawn")
 	
 func respawn():
 	connection.player_move(Vector3())
 
 func _ready():
 	get_node("UI/respawn").connect("pressed", self.respawn)
+	get_node("UI/ship_spawn").connect("pressed", self.ship_spawn_pressed)
+	get_node("UI/ship_despawn").connect("pressed", self.ship_despawn_pressed)
 	connection = get_node("/root/Connection")
 	connection.world = self
 	player_local
