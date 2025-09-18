@@ -63,12 +63,20 @@ text = "Respawn"
 
 [node name="ship_spawn" type="Button" parent="UI"]
 layout_mode = 0
-offset_left = 971.0
+offset_left = 970.0
 offset_top = 203.0
-offset_right = 1096.0
+offset_right = 1095.0
 offset_bottom = 248.0
 text = "Spawn Ship
 "
+
+[node name="item_pickup" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 970.0
+offset_top = 262.0
+offset_right = 1095.0
+offset_bottom = 307.0
+text = "Pick up item"
 
 [node name="ship_despawn" type="Button" parent="UI"]
 layout_mode = 0

@@ -127,6 +127,12 @@ func _update_ship_model(data):
 	var status = data.status_flags
 	world.call_deferred("ship_updated", owner, status)
 
+func _update_ship_position_model(data):
+	var id = data.owner
+	var pos = Vector3(data.pos.x.to_float(), data.pos.y.to_float(), data.pos.z.to_float())
+	var dst = Vector3(data.dest.x.to_float(), data.dest.y.to_float(), data.dest.z.to_float())
+	world.call_deferred("ship_movement", id, pos, dst)
+
 func _update_entity(data):
 	for model in data.models:
 		if "utp_dojo-Player" in model:
@@ -135,6 +141,8 @@ func _update_entity(data):
 			_update_position_model(model["utp_dojo-PlayerPosition"])
 		elif "utp_dojo-Spaceship" in model:
 			_update_ship_model(model["utp_dojo-Spaceship"])
+		elif "utp_dojo-ShipPosition" in model:
+			_update_ship_position_model(model["utp_dojo-ShipPosition"])
 
 func _on_controller_account_controller_disconnected() -> void:
 	_set_status("controller", false)

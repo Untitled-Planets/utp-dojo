@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://wnhqm5y0m6mt"]
+
+[ext_resource type="Script" path="res://ship_local.gd" id="1_pw0ws"]
+[ext_resource type="PackedScene" uid="uid://rd6cwxnw6g7l" path="res://spaceship.glb" id="2_w8lsi"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_qiwvu"]
+
+[node name="ship_local" type="Node3D"]
+script = ExtResource("1_pw0ws")
+
+[node name="spaceship" parent="." instance=ExtResource("2_w8lsi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.608763, 0)
+
+[node name="area" type="Area3D" parent="."]
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="area"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.61889, 0.136207)
+shape = SubResource("SphereShape3D_qiwvu")

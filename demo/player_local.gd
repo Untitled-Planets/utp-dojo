@@ -14,6 +14,7 @@ func move_remote(pos, dst):
 	move_event(pos, dst)
 
 func move_local(pos):
+	printt("**** move local ", pos)
 	navigationAgent.target_position = pos
 	connection.player_move(pos)
 
