@@ -172,7 +172,57 @@ func respawn():
 	connection.player_move(Vector3())
 
 func item_pick_up_pressed():
+	var list = area_get_item_list(0, 0, 0, 1)
+	printt("item 1 offset ", list[1])
 	connection.execute("item_collect", [1, 1])
+
+func area_get_item_list(p_planet, p_area, p_epoc, p_type):
+
+	printt("items for area ", p_area, p_type)
+
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_64(p_planet)
+	buffer.put_32(p_epoc)
+	buffer.put_32(p_area)
+	buffer.put_8(p_type)
+
+	printt("buffer before hash", buffer.data_array)
+	var ctx = HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	# Open the file to hash.
+	ctx.update(buffer.data_array)
+	# Get the computed hash.
+	var res = ctx.finish()
+
+	printt("hash is ", res.to_int32_array())
+
+	var spawn = res.decode_u32(28) % 128
+	printt("max spawn ", spawn)
+	
+	var array_base = buffer.data_array.duplicate()
+
+	var ret = []
+	
+	for i in range(spawn):
+		
+		buffer.data_array = array_base.duplicate()
+		buffer.put_8(i)
+
+		ctx.start(HashingContext.HASH_SHA256)
+		ctx.update(buffer.data_array)
+		var hash = ctx.finish()
+		
+		var x32 = hash.decode_u32(0)
+		var y32 = hash.decode_u32(4)
+		var z32 = hash.decode_u32(8)
+		
+		const v32_max = 0xffffffff
+		var pos = Vector3(x32, y32, z32) / v32_max * 32
+
+		ret.push_back(pos)
+	
+	return ret
+
 
 func _ready():
 	get_node("UI/respawn").connect("pressed", self.respawn)
