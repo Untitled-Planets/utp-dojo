@@ -70,6 +70,7 @@ func new_player(id):
 		add_child(player_local)
 		player_local.set_player_id(id)
 		player_local.world = self
+		spawn_items()
 	
 func player_movement(id, src, dst, p_recursive=false):
 	
@@ -172,19 +173,41 @@ func respawn():
 	connection.player_move(Vector3())
 
 func item_pick_up_pressed():
-	var list = area_get_item_list(0, 0, 0, 1)
+	var seed = PackedByteArray()
+	seed.resize(32)
+	seed.fill(0)
+	var epoc = 0 # 1*256 + 1*256*256;
+	var list = area_get_item_list(seed, 0, epoc, 1 * 256)
 	printt("item 1 offset ", list[1])
-	connection.execute("item_collect", [1, 1])
+	connection.execute("item_collect", [256, 1])
 
-func area_get_item_list(p_planet, p_area, p_epoc, p_type):
+func spawn_items():
+	var seed = PackedByteArray()
+	seed.resize(32)
+	seed.fill(0)
+
+	var items = area_get_item_list(seed, 0, 0, 0)
+	
+	var count = 0
+	for it in items:
+		printt("spawn itema at", count, it)
+		var res = preload("item.tscn")
+		var node = res.instantiate()
+		add_child(node)
+		node.global_position = it
+		node.set_item_info(count, 0, 0, 0)
+		count += 1
+
+
+func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 
 	printt("items for area ", p_area, p_type)
 
 	var buffer = StreamPeerBuffer.new()
-	buffer.put_64(p_planet)
+	buffer.put_data(p_planet_seed)
 	buffer.put_32(p_epoc)
 	buffer.put_32(p_area)
-	buffer.put_8(p_type)
+	buffer.put_16(p_type)
 
 	printt("buffer before hash", buffer.data_array)
 	var ctx = HashingContext.new()
@@ -193,10 +216,16 @@ func area_get_item_list(p_planet, p_area, p_epoc, p_type):
 	ctx.update(buffer.data_array)
 	# Get the computed hash.
 	var res = ctx.finish()
+	res.reverse()
+	var b32hash = res.to_int32_array()
+	b32hash.reverse()
 
-	printt("hash is ", res.to_int32_array())
+	var debug_arr = []
+	for n in b32hash:
+		debug_arr.push_back(n & 0xFFFFFFFF)
+	printt("hash is ", debug_arr)
 
-	var spawn = res.decode_u32(28) % 128
+	var spawn = b32hash[7] % 128
 	printt("max spawn ", spawn)
 	
 	var array_base = buffer.data_array.duplicate()
@@ -206,18 +235,24 @@ func area_get_item_list(p_planet, p_area, p_epoc, p_type):
 	for i in range(spawn):
 		
 		buffer.data_array = array_base.duplicate()
+		buffer.seek(buffer.data_array.size())
 		buffer.put_8(i)
 
 		ctx.start(HashingContext.HASH_SHA256)
+		printt("buffer before hash", buffer.data_array)
 		ctx.update(buffer.data_array)
 		var hash = ctx.finish()
-		
-		var x32 = hash.decode_u32(0)
-		var y32 = hash.decode_u32(4)
-		var z32 = hash.decode_u32(8)
+
+		hash.reverse()
+		var hash_32 = hash.to_int32_array()
+		hash_32.reverse()
+		printt("hash for item ", i, hash_32)
+		var x32 = hash_32[0] & 0xFFFFFFFF
+		var y32 = hash_32[1] & 0xFFFFFFFF
+		var z32 = hash_32[2] & 0xFFFFFFFF
 		
 		const v32_max = 0xffffffff
-		var pos = Vector3(x32, y32, z32) / v32_max * 32
+		var pos = (Vector3(x32, y32, z32) / v32_max) * 32
 
 		ret.push_back(pos)
 	

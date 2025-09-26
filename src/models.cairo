@@ -64,7 +64,7 @@ pub struct Planet {
     pub id: u128,
     seed: felt252,
     pub max_radius_squared: u128,
-    epoc: felt252,
+    epoc: u32,
 }
 
 
@@ -76,7 +76,7 @@ pub struct CollectableTracker {
     pub area: felt252,
     pub collectable_type: u16,
     pub bitfield: u128,
-    pub epoc: felt252,
+    pub epoc: u32,
 }
 
 

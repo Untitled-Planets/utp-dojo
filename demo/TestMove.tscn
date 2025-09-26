@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://test_move.gd" id="1_at24u"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_hif2c"]
-vertices = PackedVector3Array(9.55611, 0.0271594, -0.112995, 9.55611, 0.0271594, -10.113, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, -9.44389, 0.0271594, 10.137, 0.0561085, 0.0271594, 10.137, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, 0.0561085, 0.0271594, 10.137, 9.55611, 0.0271594, 10.137, 9.55611, 0.0271594, -0.112995)
-polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(3, 0, 5), PackedInt32Array(3, 5, 4), PackedInt32Array(8, 7, 6), PackedInt32Array(11, 10, 9)]
+vertices = PackedVector3Array(-19.5, 0.044, -20.8455, -19.5, 0.044, 20.9045, 19.5, 0.044, 20.9045, 19.5, 0.044, -20.8455)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
 cell_height = 0.01
 
 [sub_resource type="BoxMesh" id="BoxMesh_q8a4c"]
@@ -29,7 +29,7 @@ script = ExtResource("1_at24u")
 navigation_mesh = SubResource("NavigationMesh_hif2c")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D"]
-transform = Transform3D(19.8878, 0, 0, 0, 0.0256813, 0, 0, 0, 21.226, 0, 0, 0)
+transform = Transform3D(40, 0, 0, 0, 0.052, 0, 0, 0, 42.691, 0, 0, 0)
 mesh = SubResource("BoxMesh_q8a4c")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/MeshInstance3D"]
@@ -38,7 +38,7 @@ mesh = SubResource("BoxMesh_q8a4c")
 shape = SubResource("BoxShape3D_vvx0g")
 
 [node name="Camera3D" type="Camera3D" parent="." groups=["Camera"]]
-transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 7.92028, 13.1512)
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 15.0773, 29.9723)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_re82b")

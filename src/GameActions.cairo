@@ -128,6 +128,19 @@ pub mod GameActions {
         };
     }
 
+    fn append_bytearray(ref ba: ByteArray, val: u256, bytes: u8) -> () {
+
+        let mut to_add = bytes;
+        let mut val_left = val;
+        while (to_add > 0) {
+
+            let byte: u8 = (val_left & 0xff).try_into().unwrap();
+            ba.append_byte(byte);
+            to_add = to_add - 1;
+            val_left = val_left / 256;
+        };
+    }
+
     const DEFAULT_REFERENCE_BODY_ID: u128 = 0;
     const MAX_SPAWN: u8 = 128;
     const FP_LEN_SQ_EPSION: i128 = 0x40000000; // 2^30
@@ -380,16 +393,17 @@ pub mod GameActions {
             let area_x = player_pos.x / (AREA_SIZE * FP_UNIT).into();
             let area_y = player_pos.y / (AREA_SIZE * FP_UNIT).into();
             let area_z = player_pos.z / (AREA_SIZE * FP_UNIT).into();
-            let area_hash = area_x * 1024 * 1024 + area_y * 1024 + area_z;
+            let area_hash : u32 = (area_x * 1024 * 1024 + area_y * 1024 + area_z).try_into().unwrap();
             println!("player is in area {} {}, {}, {}", area_hash, area_x, area_y, area_z);
 
             // Create a ByteArray from a string literal and then append values
             let mut count_seed = ByteArray { data: array![], pending_word: 0, pending_word_len: 0 };
             // Convert values to bytes before appending
-            count_seed.append_byte(planet.seed.try_into().unwrap());
-            count_seed.append_byte(planet.epoc.try_into().unwrap());
-            count_seed.append_byte(area_hash.try_into().unwrap());
-            count_seed.append_byte(collectable_type.try_into().unwrap());
+            append_bytearray(ref count_seed, planet.seed.into(), 32);
+            let epoc:u32 = planet.epoc;
+            append_bytearray(ref count_seed, epoc.into(), 4);
+            append_bytearray(ref count_seed, area_hash.into(), 4);
+            append_bytearray(ref count_seed, collectable_type.into(), 2);
             //let count_seed = planet.seed + planet.epoc + area_hash + collectable_type.into();
             
             println!("array before hash {:?}", count_seed);
@@ -401,9 +415,11 @@ pub mod GameActions {
             assert(collectable_index.into() < total_spawned, 'InvalidIndex');
 
             // Create a new ByteArray for position seed by copying the count_seed and adding the collectable_index
-            let mut pos_seed = ByteArray { data: count_seed.data.clone(), pending_word: 0, pending_word_len: 0 };
+            let mut pos_seed = count_seed.clone();
             pos_seed.append_byte(collectable_index.into());
             let item_hash = core::sha256::compute_sha256_byte_array(@pos_seed);
+            println!("array before item hash {:?}", pos_seed);
+            println!("item {} hash is {:?}", collectable_index, item_hash);
 
             let span = item_hash.span(); // span of 32 bit elements
             // Convert u32 to i128 using try_into().unwrap()
@@ -425,7 +441,7 @@ pub mod GameActions {
             let d2 = vec3_fp40_dist_sq(item_pos, player_pos);
             assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
 
-            let area_key: i128 = area_hash * 1000_i128 + collectable_type.into();
+            let area_key: i128 = area_hash.into() * 0xffff_i128 + collectable_type.into();
             
             // Get existing tracker or create a new one
             let mut tracker : CollectableTracker = world.read_model(area_key);
