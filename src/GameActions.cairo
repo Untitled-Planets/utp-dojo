@@ -148,7 +148,7 @@ pub mod GameActions {
     const AREA_SIZE: i128 = 32;
     const PLAYER_WALKING_SPEED: i128 = 1 * FP_UNIT;
     const MAX_PLAYER_WALK_EPSILON2: i128 = 5 * FP_UNIT;
-    const MAX_SPAWN_DISTANCE_SQUARED: i128 = 25 * FP_UNIT; // 5 meters
+    const MAX_SPAWN_DISTANCE_SQUARED: i128 = 2500 * FP_UNIT; // 50 meters
     const MAX_ITEM_PICKUP_D2: i128 = 64 * FP_UNIT; // 8 meters
 
     const SHIP_SPEED: i128 = 100 * FP_UNIT;
