@@ -13,7 +13,7 @@ var status = {
 }
 
 const WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
-const ACTIONS_CONTRACT = "0x078739a57ac39677750bb28b9f516385be8752c9c1e4c41010e32ec15e75ce41"
+const ACTIONS_CONTRACT = "0x044341cf0e678b7a53ecba53c4da9ef594108d58ce74193ea78da58e1c5b93bf"
 const SLOT_CHAIN_ID = "WP_UTP_DOJO2"
 const LOCAL_CHAIN_ID = "KATANA"
 
@@ -36,7 +36,7 @@ var world
 
 func _ready() -> void:
 	var dojo = DojoC.new()
-	rpc = ProjectSettings.get_setting("dojo/config/katana/rpc_url")
+	rpc = ProjectSettings.get_setting("dojo/config/katana_url")
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
 	client.world_address = WORLD_CONTRACT

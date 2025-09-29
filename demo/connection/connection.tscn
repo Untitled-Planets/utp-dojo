@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://b75yggsnay1mo"]
+[gd_scene load_steps=6 format=3 uid="uid://b75yggsnay1mo"]
 
 [ext_resource type="Script" path="res://connection/connection.gd" id="1_c7jwa"]
 
@@ -10,13 +10,9 @@ name = "Entity"
 [sub_resource type="MessageSubscription" id="MessageSubscription_erpqw"]
 name = "Message"
 
-[sub_resource type="DojoPolicy" id="DojoPolicy_2kgrw"]
-method = "player_move"
-
 [sub_resource type="DojoPolicies" id="DojoPolicies_b2hkl"]
 name = "GameActions"
 contract = "0x009c9371a46bf1f798dd8081d85f63536c24d19925d5341a0cdc594589b1dd73"
-policies = Array[DojoPolicy]([SubResource("DojoPolicy_2kgrw")])
 
 [node name="Connection" type="Node"]
 script = ExtResource("1_c7jwa")
@@ -26,8 +22,6 @@ entity_sub = SubResource("EntitySubscription_erpqw")
 message_sub = SubResource("MessageSubscription_erpqw")
 
 [node name="ToriiClient" type="ToriiClient" parent="."]
-torii_url = "http://127.0.0.1:8080"
-world_address = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
 
 [node name="ControllerAccount" type="ControllerAccount" parent="."]
 rpc_url = "http://localhost:5050"
