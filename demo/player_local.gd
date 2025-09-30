@@ -16,7 +16,7 @@ func move_remote(pos, dst):
 func move_local(pos):
 	printt("**** move local ", pos)
 	navigationAgent.target_position = pos
-	connection.player_move(pos)
+	connection.execute("player_move", [pos])
 
 func _ready():
 	connection = get_node("/root/Connection")

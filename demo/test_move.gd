@@ -76,6 +76,7 @@ func player_movement(id, src, dst, p_recursive=false):
 	
 	if !(id in players):
 		new_player(id)
+		player_updated(id, preload("player_remote.gd").PlayerFlags.OnFoot)
 		printt("player move not instanced?", id)
 		if p_recursive:
 			print("Recursive move attempted, aborting")
@@ -170,7 +171,7 @@ func ship_leave_pressed():
 	set_input_mode(InputModes.ShipLeave)
 	
 func respawn():
-	connection.player_move(Vector3())
+	connection.execute("player_move", [Vector3()])
 
 func item_pick_up_pressed():
 	var seed = PackedByteArray()

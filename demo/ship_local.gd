@@ -18,7 +18,7 @@ func move_remote(pos, dst):
 
 func move_local(pos):
 	move_to(pos)
-	connection.ship_move(pos, false)
+	connection.execute("ship_move", [pos, false])
 
 func _ready():
 	connection = get_node("/root/Connection")

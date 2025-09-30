@@ -12,15 +12,20 @@ var status = {
 	"events": false,
 }
 
-const WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
-const ACTIONS_CONTRACT = "0x044341cf0e678b7a53ecba53c4da9ef594108d58ce74193ea78da58e1c5b93bf"
-const SLOT_CHAIN_ID = "WP_UTP_DOJO2"
-const LOCAL_CHAIN_ID = "KATANA"
+var _debug_system_user: User
+
+var WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
+var ACTIONS_CONTRACT = "0x044341cf0e678b7a53ecba53c4da9ef594108d58ce74193ea78da58e1c5b93bf"
+var SLOT_CHAIN_ID = "WP_UTP_DOJO2"
+var LOCAL_CHAIN_ID = "KATANA"
 
 @export var debug_use_account = false
 var account_addr = "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
 var private_key = "0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b"
 var rpc
+var torii_rpc
+
+var queue
 
 var players = {}
 
@@ -34,13 +39,36 @@ var players = {}
 
 var world
 
+func _settings_path():
+	var user = _debug_system_user.get_user_id()
+	if !user:
+		return "dojo/config"
+
+	var path = "dojo.%s/config" % user
+	
+	return path
+
+
 func _ready() -> void:
+	_debug_system_user = User.new()
+	_debug_system_user.initialize()
+	printt("local user is ", _debug_system_user.get_user_id())
 	var dojo = DojoC.new()
-	rpc = ProjectSettings.get_setting("dojo/config/katana_url")
+	rpc = ProjectSettings.get_setting(_settings_path() + "/katana_url")
+	torii_rpc = ProjectSettings.get_setting(_settings_path() + "/torii_url")
+	WORLD_CONTRACT = ProjectSettings.get_setting(_settings_path() + "/world_address")
+	ACTIONS_CONTRACT = ProjectSettings.get_setting(_settings_path() + "/contract_address")
+	account_addr = ProjectSettings.get_setting(_settings_path() + "/account/address")
+	private_key = ProjectSettings.get_setting(_settings_path() + "/account/private_key")
+	
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
 	client.world_address = WORLD_CONTRACT
+	client.torii_url = torii_rpc
 	controller_account.policies.contract = ACTIONS_CONTRACT
+	
+	queue = DispatchQueue.new()
+	queue.create_serial()
 
 func _set_status(name, val):
 	status[name] = val
@@ -162,34 +190,10 @@ func create_subscriptions(events:Callable,entities:Callable) -> void:
 	print("creating event sub")
 	client.on_event_message_update(events, message_sub)
 	
-
-func player_move(pos):
-	var params = [pos.x, pos.y, pos.z]
-	#var params = [pos.x, pos.y, pos.z]
-
-	if account.is_account_valid():
-		account.execute_raw(ACTIONS_CONTRACT, "player_move", params)
-	else:
-		if !status["controller"]:
-			push_error("not connected")
-			return
-
-		controller_account.execute_from_outside(ACTIONS_CONTRACT, "player_move", params)
-
-func ship_move(pos, hyperspeed):
-	
-	var params = [pos.x, pos.y, pos.z, hyperspeed]
-	
-	if account.is_account_valid():
-		account.execute_raw(ACTIONS_CONTRACT, "ship_move", params)
-	else:
-		if !status["controller"]:
-			push_error("not connected")
-			return
-
-		controller_account.execute_from_outside(ACTIONS_CONTRACT, "ship_move", params)
-
 func execute(method, params):
+	queue.dispatch(self._execute.bind(method, params))
+
+func _execute(method, params):
 	if account.is_account_valid():
 		account.execute_raw(ACTIONS_CONTRACT, method, params)
 	else:
