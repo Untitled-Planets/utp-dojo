@@ -18,6 +18,7 @@ enum InputModes {
 var input_mode
 
 const ship_board_distance = 5
+const item_pickup_distance = 5
 
 func player_updated(id, status):
 	if !(id in players):
@@ -143,12 +144,22 @@ func ship_request_board(pos):
 	pass
 
 func ship_clicked(ship):
-	if player_local.position.distance_to(ship.position) > ship_board_distance:
-		position_event(ship.position)
 	if input_mode == InputModes.PlayerMove:
-		ship_request_board(ship.position)
+		if player_local.position.distance_to(ship.position) > ship_board_distance:
+			position_event(ship.global_position)
+		else:
+			ship_request_board(ship.global_position)
 	else:
-		position_event(ship.position)
+		position_event(ship.global_position)
+
+func item_clicked(item):
+	if input_mode == InputModes.PlayerMove:
+		if player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
+			position_event(item.global_position)
+		else:
+			item_pickup(item)
+	else:
+		position_event(item.global_position)
 
 func position_event(pos):
 	
@@ -173,6 +184,9 @@ func ship_leave_pressed():
 func respawn():
 	connection.execute("player_move", [Vector3()])
 
+func item_pickup(item):
+	connection.execute("item_collect", [item.type, item.index])
+
 func item_pick_up_pressed():
 	var seed = PackedByteArray()
 	seed.resize(32)
@@ -196,7 +210,7 @@ func spawn_items():
 		var node = res.instantiate()
 		add_child(node)
 		node.global_position = it
-		node.set_item_info(count, 0, 0, 0)
+		node.set_item_info(self, count, 0, 0, 0)
 		count += 1
 
 

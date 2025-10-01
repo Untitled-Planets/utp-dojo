@@ -61,6 +61,8 @@ func _ready() -> void:
 	account_addr = ProjectSettings.get_setting(_settings_path() + "/account/address")
 	private_key = ProjectSettings.get_setting(_settings_path() + "/account/private_key")
 	
+	printt("******** fp default is ", ProjectSettings.get_setting(_settings_path() + "fixed_point/default"))
+	
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
 	client.world_address = WORLD_CONTRACT
