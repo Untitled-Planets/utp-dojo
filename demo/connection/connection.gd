@@ -157,6 +157,17 @@ func _update_ship_model(data):
 	var status = data.status_flags
 	world.call_deferred("ship_updated", owner, status)
 
+func _update_collectable_area(data):
+	
+	pass
+
+func _update_inventory(data):
+	var user = data.player_id
+	var item = data.item_type
+	var count = data.count
+	world.update_inventory(user, item, count)
+	pass
+
 func _update_ship_position_model(data):
 	var id = data.owner
 	var pos = Vector3(data.pos.x.to_float(), data.pos.y.to_float(), data.pos.z.to_float())
@@ -173,6 +184,10 @@ func _update_entity(data):
 			_update_ship_model(model["utp_dojo-Spaceship"])
 		elif "utp_dojo-ShipPosition" in model:
 			_update_ship_position_model(model["utp_dojo-ShipPosition"])
+		elif "utp-dojo-CollectableTracker" in model:
+			_update_collectable_area(model["utp-dojo-CollectableTracker"])
+		elif "utp_dojo-InventoryItem" in model:
+			_update_inventory(model["utp_dojo-InventoryItem"])
 
 func _on_controller_account_controller_disconnected() -> void:
 	_set_status("controller", false)

@@ -7,6 +7,7 @@ var ships = {}
 
 var player_local
 var ship_local
+var inventory = {}
 
 enum InputModes {
 	PlayerMove,
@@ -19,6 +20,29 @@ var input_mode
 
 const ship_board_distance = 5
 const item_pickup_distance = 5
+
+const area_size = 32
+
+func update_inventory(user, type, count):
+	
+	if user == null || type == null:
+		return
+	
+	if !(user in inventory):
+		inventory[user] = {}
+	if !(type in inventory[user]):
+		inventory[user][type] = {}
+	inventory[user][type] = count
+
+	var lid = connection.get_local_id()
+	if !lid || !(lid in inventory):
+		return
+		
+	var text = ""
+	for item_type in inventory[lid]:
+		text += "Item %s: %s\n" % [item_type, inventory[lid][item_type]]
+
+	get_node("UI/inventory").text = text
 
 func player_updated(id, status):
 	if !(id in players):
@@ -187,21 +211,29 @@ func respawn():
 func item_pickup(item):
 	connection.execute("item_collect", [item.type, item.index])
 
-func item_pick_up_pressed():
-	var seed = PackedByteArray()
-	seed.resize(32)
-	seed.fill(0)
-	var epoc = 0 # 1*256 + 1*256*256;
-	var list = area_get_item_list(seed, 0, epoc, 1 * 256)
-	printt("item 1 offset ", list[1])
-	connection.execute("item_collect", [256, 1])
+func _item_area(pos):
+	var area_x := int(pos.x / area_size)
+	if pos.x < 0:
+		area_x += 0xffffffff;
+
+	var area_y := int(pos.y / area_size)
+	if pos.y < 0:
+		area_y += 0xffffffff;
+	
+	var area_z := int(pos.z / area_size)
+	if pos.z < 0:
+		area_z += 0xffffffff;
+		
+	return (area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)
 
 func spawn_items():
 	var seed = PackedByteArray()
 	seed.resize(32)
 	seed.fill(0)
 
-	var items = area_get_item_list(seed, 0, 0, 0)
+	var area = _item_area(player_local.global_position)
+
+	var items = area_get_item_list(seed, area, 0, 0)
 	
 	var count = 0
 	for it in items:
@@ -254,14 +286,14 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 		buffer.put_8(i)
 
 		ctx.start(HashingContext.HASH_SHA256)
-		printt("buffer before hash", buffer.data_array)
+		#printt("buffer before hash", buffer.data_array)
 		ctx.update(buffer.data_array)
 		var hash = ctx.finish()
 
 		hash.reverse()
 		var hash_32 = hash.to_int32_array()
 		hash_32.reverse()
-		printt("hash for item ", i, hash_32)
+		#printt("hash for item ", i, hash_32)
 		var x32 = hash_32[0] & 0xFFFFFFFF
 		var y32 = hash_32[1] & 0xFFFFFFFF
 		var z32 = hash_32[2] & 0xFFFFFFFF
@@ -279,7 +311,6 @@ func _ready():
 	get_node("UI/ship_spawn").connect("pressed", self.ship_spawn_pressed)
 	get_node("UI/ship_despawn").connect("pressed", self.ship_despawn_pressed)
 	get_node("UI/ship_leave").connect("pressed", self.ship_leave_pressed)
-	get_node("UI/item_pickup").connect("pressed", self.item_pick_up_pressed)
 	connection = get_node("/root/Connection")
 	connection.world = self
 	player_local

@@ -390,10 +390,19 @@ pub mod GameActions {
             let player_pos_model : PlayerPosition = world.read_model(player_id);
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
-            let area_x = player_pos.x / (AREA_SIZE * FP_UNIT).into();
-            let area_y = player_pos.y / (AREA_SIZE * FP_UNIT).into();
-            let area_z = player_pos.z / (AREA_SIZE * FP_UNIT).into();
-            let area_hash : u32 = (area_x * 1024 * 1024 + area_y * 1024 + area_z).try_into().unwrap();
+            let mut area_x = player_pos.x / (AREA_SIZE * FP_UNIT).into();
+            if (player_pos.x < 0) {
+                area_x += 0xffffffff;
+            }
+            let mut area_y = player_pos.y / (AREA_SIZE * FP_UNIT).into();
+            if (player_pos.y < 0) {
+                area_y += 0xffffffff;
+            }
+            let mut area_z = player_pos.z / (AREA_SIZE * FP_UNIT).into();
+            if (player_pos.z < 0) {
+                area_z += 0xffffffff;
+            }
+            let area_hash : u32 = ((area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)).try_into().unwrap();
             println!("player is in area {} {}, {}, {}", area_hash, area_x, area_y, area_z);
 
             // Create a ByteArray from a string literal and then append values

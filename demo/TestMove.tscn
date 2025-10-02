@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dqgiyvlaqa17y"]
+[gd_scene load_steps=9 format=3 uid="uid://dqgiyvlaqa17y"]
 
 [ext_resource type="Script" path="res://test_move.gd" id="1_at24u"]
 
@@ -20,6 +20,10 @@ sky_material = SubResource("ProceduralSkyMaterial_gemmb")
 background_mode = 2
 background_energy_multiplier = 2.24
 sky = SubResource("Sky_6xbsx")
+
+[sub_resource type="LabelSettings" id="LabelSettings_nrnhu"]
+outline_size = 5
+outline_color = Color(0, 0, 0, 1)
 
 [node name="world" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95152, 0)
@@ -70,14 +74,6 @@ offset_bottom = 248.0
 text = "Spawn Ship
 "
 
-[node name="item_pickup" type="Button" parent="UI"]
-layout_mode = 0
-offset_left = 970.0
-offset_top = 262.0
-offset_right = 1095.0
-offset_bottom = 307.0
-text = "Pick up item"
-
 [node name="ship_despawn" type="Button" parent="UI"]
 layout_mode = 0
 offset_left = 970.0
@@ -94,3 +90,12 @@ offset_right = 1095.0
 offset_bottom = 192.0
 text = "Leave Ship
 "
+
+[node name="inventory" type="Label" parent="UI"]
+layout_mode = 0
+offset_left = 49.0
+offset_top = 40.0
+offset_right = 145.0
+offset_bottom = 126.0
+text = "Inventory"
+label_settings = SubResource("LabelSettings_nrnhu")
