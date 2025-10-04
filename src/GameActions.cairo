@@ -450,20 +450,8 @@ pub mod GameActions {
             let d2 = vec3_fp40_dist_sq(item_pos, player_pos);
             assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
 
-            let area_key: i128 = area_hash.into() * 0xffff_i128 + collectable_type.into();
-            
             // Get existing tracker or create a new one
-            let mut tracker : CollectableTracker = world.read_model(area_key);
-            // TODO: detect if key not found
-            //if (!tracker.is_some()) {
-            //   tracker = CollectableTracker {
-            //        id: area_key,
-            //        area: area_hash.into(),
-            //        collectable_type,
-            //        bitfield: 0,
-            //        epoc: 0,
-            //    };
-            //};
+            let mut tracker : CollectableTracker = world.read_model((area_hash, collectable_type));
             
             let bitfield : u128 = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
             let bit_mask : u128 = 2_u128.pow(collectable_index.into());
@@ -474,6 +462,10 @@ pub mod GameActions {
             // Bitwise OR implementation
             tracker.bitfield = bitfield | bit_mask;
             tracker.epoc = planet.epoc;
+
+            tracker.area = area_hash;
+            tracker.collectable_type = collectable_type;
+
             world.write_model(@tracker);
 
             // move to funtcion add_to_inventory
@@ -489,9 +481,9 @@ pub mod GameActions {
                 
                 // Increment the count
                 let new_item = InventoryItem { 
-                    player_id: player_id, 
-                    item_type: collectable_type, 
-                    count: current_item.count + 1, 
+                    player_id: player_id,
+                    item_type: collectable_type,
+                    count: current_item.count + 1,
                 };
                 
                 // Save the updated inventory item

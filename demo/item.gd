@@ -15,6 +15,21 @@ func set_item_info(p_world, p_index, p_type, p_area, p_epoc):
 	epoc = p_epoc
 	
 
+func item_area_updated(p_area, p_type, p_bitfield, p_epoc):
+	if p_area != area || p_type != type:
+		return
+	if p_epoc != epoc:
+		expired()
+
+	if world._has_bit(p_bitfield, index):
+		collected()
+
+func expired():
+	queue_free()
+
+func collected():
+	queue_free()
+
 func _clicked(camera, event, pos, normal, shape):
 	if event.is_pressed() && event.is_action("select"):
 		world.item_clicked(self)

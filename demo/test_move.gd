@@ -4,6 +4,7 @@ var connection
 
 var players = {}
 var ships = {}
+var item_areas = {}
 
 var player_local
 var ship_local
@@ -226,24 +227,48 @@ func _item_area(pos):
 		
 	return (area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)
 
+func _has_bit(field, index:int):
+	
+	if typeof(field) == TYPE_INT:
+		return field & (1<<index)
+		
+	var bytes = field.to_bytes()
+	var byte_i = int(index / 8)
+	var bit_i = int(index % 8)
+	
+	return bytes[byte_i] & (1<<bit_i)
+
 func spawn_items():
 	var seed = PackedByteArray()
 	seed.resize(32)
 	seed.fill(0)
+	var item_parent = get_node("items")
 
 	var area = _item_area(player_local.global_position)
 
-	var items = area_get_item_list(seed, area, 0, 0)
+	var type = 0
+	var items = area_get_item_list(seed, area, 0, type)
+
+	var collected = 0
+	var key = [area, type]
+	if key in item_areas:
+		collected = item_areas[key].bitfield
 	
 	var count = 0
 	for it in items:
+		if _has_bit(collected, count):
+			count += 1
+			continue
 		printt("spawn itema at", count, it)
 		var res = preload("item.tscn")
 		var node = res.instantiate()
-		add_child(node)
+		item_parent.add_child(node)
+		
 		node.global_position = it
 		node.set_item_info(self, count, 0, 0, 0)
+		node.add_to_group("items")
 		count += 1
+
 
 
 func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
@@ -305,6 +330,10 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 	
 	return ret
 
+func item_update_area(area, type, bitfield, epoc):
+
+	item_areas[[area, type]] = { bitfield = bitfield, epoc = epoc}
+	get_tree().call_group("items", "item_area_updated", area, type, bitfield, epoc)
 
 func _ready():
 	get_node("UI/respawn").connect("pressed", self.respawn)

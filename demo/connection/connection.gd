@@ -159,7 +159,11 @@ func _update_ship_model(data):
 
 func _update_collectable_area(data):
 	
-	pass
+	var area = data.area
+	var type = data.collectable_type
+	var bitfield = data.bitfield
+	var epoc = data.epoc
+	world.item_update_area(area, type, bitfield, epoc)
 
 func _update_inventory(data):
 	var user = data.player_id
@@ -184,8 +188,8 @@ func _update_entity(data):
 			_update_ship_model(model["utp_dojo-Spaceship"])
 		elif "utp_dojo-ShipPosition" in model:
 			_update_ship_position_model(model["utp_dojo-ShipPosition"])
-		elif "utp-dojo-CollectableTracker" in model:
-			_update_collectable_area(model["utp-dojo-CollectableTracker"])
+		elif "utp_dojo-CollectableTracker" in model:
+			_update_collectable_area(model["utp_dojo-CollectableTracker"])
 		elif "utp_dojo-InventoryItem" in model:
 			_update_inventory(model["utp_dojo-InventoryItem"])
 

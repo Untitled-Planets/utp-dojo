@@ -99,3 +99,5 @@ offset_right = 145.0
 offset_bottom = 126.0
 text = "Inventory"
 label_settings = SubResource("LabelSettings_nrnhu")
+
+[node name="items" type="Node3D" parent="."]
