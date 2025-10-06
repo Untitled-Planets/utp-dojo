@@ -27,6 +27,11 @@ config/torii_url="http://127.0.0.1:8080"
 config/fixed_point/128=40
 config/fixed_point/256=40
 config/fixed_point/default=40
+config/policies={
+"player_move": "move the player"
+}
+config/world_address="0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
+config/contract_address="0x03f4b2fbfdfefd5f24588cad670a55e90d19809eff3879f21f15370cdf540a9f"
 
 [dojo.ariel@godotengine.org]
 

@@ -67,7 +67,18 @@ func _ready() -> void:
 	OS.set_environment("RUST_LOG", "debug")
 	client.world_address = WORLD_CONTRACT
 	client.torii_url = torii_rpc
-	controller_account.policies.contract = ACTIONS_CONTRACT
+	controller_account.rpc_url = rpc
+	controller_account.chain_id = "UTP_DOJO"
+	var policies = {
+		"name": "GameActions",
+		"contract_address": "0x03f4b2fbfdfefd5f24588cad670a55e90d19809eff3879f21f15370cdf540a9f",
+		"policies": [
+			{
+				"player_move": "move the player",
+			},
+		],
+	}
+	controller_account.policies = DojoPolicies.from_dictionary(policies)
 	
 	queue = DispatchQueue.new()
 	queue.create_serial()

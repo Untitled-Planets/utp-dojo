@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://b75yggsnay1mo"]
+[gd_scene load_steps=5 format=3 uid="uid://b75yggsnay1mo"]
 
 [ext_resource type="Script" path="res://connection/connection.gd" id="1_c7jwa"]
 
@@ -10,13 +10,8 @@ name = "Entity"
 [sub_resource type="MessageSubscription" id="MessageSubscription_erpqw"]
 name = "Message"
 
-[sub_resource type="DojoPolicies" id="DojoPolicies_b2hkl"]
-name = "GameActions"
-contract = "0x009c9371a46bf1f798dd8081d85f63536c24d19925d5341a0cdc594589b1dd73"
-
 [node name="Connection" type="Node"]
 script = ExtResource("1_c7jwa")
-debug_use_account = true
 query = SubResource("DojoQuery_erpqw")
 entity_sub = SubResource("EntitySubscription_erpqw")
 message_sub = SubResource("MessageSubscription_erpqw")
@@ -24,9 +19,7 @@ message_sub = SubResource("MessageSubscription_erpqw")
 [node name="ToriiClient" type="ToriiClient" parent="."]
 
 [node name="ControllerAccount" type="ControllerAccount" parent="."]
-rpc_url = "http://localhost:5050"
-chain_id = "KATANA"
-policies = SubResource("DojoPolicies_b2hkl")
+chain_id = "UTP_DOJO"
 
 [node name="Account" type="Account" parent="."]
 

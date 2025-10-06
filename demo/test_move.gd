@@ -212,7 +212,7 @@ func respawn():
 func item_pickup(item):
 	connection.execute("item_collect", [item.type, item.index])
 
-func _item_area(pos):
+func _item_area(pos) -> int:
 	var area_x := int(pos.x / area_size)
 	if pos.x < 0:
 		area_x += 0xffffffff;
