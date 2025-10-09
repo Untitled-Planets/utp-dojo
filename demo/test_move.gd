@@ -250,7 +250,15 @@ func spawn_items():
 	var item_parent = get_node("items")
 
 	var area = _item_area(player_local.global_position)
-	var area_pos = _item_area_pos(player_local.global_position)
+	
+	var area_pos = Vector3i(player_local.global_position / area_size) * area_size
+	var pos_dir = Vector3(1, 1, 1)
+	if player_local.global_position.x < 0:
+		pos_dir.x = -1
+	if player_local.global_position.y < 0:
+		pos_dir.y = -1
+	if player_local.global_position.z < 0:
+		pos_dir.z = -1
 
 	var type = 0
 	var items = area_get_item_list(seed, area, 0, type)
@@ -266,7 +274,7 @@ func spawn_items():
 		if !"nodes" in item_areas[key]:
 			item_areas[key].nodes = []
 	else:
-		item_areas[key] = { collected = 0, nodes = [] }
+		item_areas[key] = { bitfield = 0, nodes = [] }
 	
 	var count = 0
 	for it in items:
@@ -278,7 +286,7 @@ func spawn_items():
 		var node = res.instantiate()
 		item_parent.add_child(node)
 		
-		node.global_position = it
+		node.global_position = Vector3(area_pos) + it * pos_dir
 		node.set_item_info(self, count, 0, 0, 0)
 		node.add_to_group("items")
 		count += 1
@@ -313,7 +321,7 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 		debug_arr.push_back(n & 0xFFFFFFFF)
 	printt("hash is ", debug_arr)
 
-	var spawn = b32hash[7] % 128
+	var spawn = (b32hash[7] & 0xffffffff) % 128
 	printt("max spawn ", spawn)
 	
 	var array_base = buffer.data_array.duplicate()

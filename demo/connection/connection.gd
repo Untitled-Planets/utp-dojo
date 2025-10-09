@@ -73,7 +73,8 @@ func _ready() -> void:
 	controller_account.chain_id = "UTP_DOJO"
 	controller_account.contract_address = ACTIONS_CONTRACT
 	policies = {
-			"player_move": "move the player",
+		"player_move": "move the player",
+		"item_collect": "collect an item",
 	}
 	#controller_account.policies = DojoPolicies.from_dictionary(policies)
 
