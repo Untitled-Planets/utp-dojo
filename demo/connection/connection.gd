@@ -38,6 +38,7 @@ var players = {}
 @onready var account : Account = $Account
 
 var world
+var policies
 
 func _settings_path():
 	var user = _debug_system_user.get_user_id()
@@ -61,6 +62,7 @@ func _ready() -> void:
 	account_addr = ProjectSettings.get_setting(_settings_path() + "/account/address")
 	private_key = ProjectSettings.get_setting(_settings_path() + "/account/private_key")
 	
+	printt("getting property ", "dojo/config/account/address", ProjectSettings.get_setting("dojo/config/account/address"))
 	printt("******** fp default is ", ProjectSettings.get_setting(_settings_path() + "fixed_point/default"))
 	
 	OS.set_environment("RUST_BACKTRACE", "full")
@@ -69,16 +71,13 @@ func _ready() -> void:
 	client.torii_url = torii_rpc
 	controller_account.rpc_url = rpc
 	controller_account.chain_id = "UTP_DOJO"
-	var policies = {
-		"name": "GameActions",
-		"contract_address": "0x03f4b2fbfdfefd5f24588cad670a55e90d19809eff3879f21f15370cdf540a9f",
-		"policies": [
-			{
-				"player_move": "move the player",
-			},
-		],
+	controller_account.contract_address = ACTIONS_CONTRACT
+	policies = {
+			"player_move": "move the player",
 	}
-	controller_account.policies = DojoPolicies.from_dictionary(policies)
+	#controller_account.policies = DojoPolicies.from_dictionary(policies)
+
+	controller_account.policies = policies
 	
 	queue = DispatchQueue.new()
 	queue.create_serial()
@@ -105,7 +104,9 @@ func connect_controller() -> void:
 		_on_controller_account_controller_connected(true)
 		#_set_status("controller", true)
 	else:
-		controller_account.setup()
+		controller_account.init_provider()
+		controller_account.create(policies)
+		#controller_account.setup()
 
 func _on_torii_client_client_connected(success: bool) -> void:
 	_set_status("client", success)

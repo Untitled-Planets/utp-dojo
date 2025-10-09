@@ -227,6 +227,11 @@ func _item_area(pos) -> int:
 		
 	return (area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)
 
+func _item_area_pos(pos):
+
+	pass
+
+
 func _has_bit(field, index:int):
 	
 	if typeof(field) == TYPE_INT:
@@ -245,6 +250,7 @@ func spawn_items():
 	var item_parent = get_node("items")
 
 	var area = _item_area(player_local.global_position)
+	var area_pos = _item_area_pos(player_local.global_position)
 
 	var type = 0
 	var items = area_get_item_list(seed, area, 0, type)
@@ -253,6 +259,14 @@ func spawn_items():
 	var key = [area, type]
 	if key in item_areas:
 		collected = item_areas[key].bitfield
+		if "nodes" in item_areas[key]:
+			for node in item_areas[key].nodes:
+				node.queue_free()
+			item_areas[key].nodes = []
+		if !"nodes" in item_areas[key]:
+			item_areas[key].nodes = []
+	else:
+		item_areas[key] = { collected = 0, nodes = [] }
 	
 	var count = 0
 	for it in items:
@@ -268,6 +282,8 @@ func spawn_items():
 		node.set_item_info(self, count, 0, 0, 0)
 		node.add_to_group("items")
 		count += 1
+		
+		item_areas[key].nodes.push_back(node)
 
 
 
@@ -332,7 +348,11 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 
 func item_update_area(area, type, bitfield, epoc):
 
-	item_areas[[area, type]] = { bitfield = bitfield, epoc = epoc}
+	var key = [area, type]
+	if !(key in item_areas):
+		item_areas[key] = { }
+	item_areas[key].bitfield = bitfield
+	item_areas[key].epoc = epoc
 	get_tree().call_group("items", "item_area_updated", area, type, bitfield, epoc)
 
 func _ready():
@@ -340,6 +360,8 @@ func _ready():
 	get_node("UI/ship_spawn").connect("pressed", self.ship_spawn_pressed)
 	get_node("UI/ship_despawn").connect("pressed", self.ship_despawn_pressed)
 	get_node("UI/ship_leave").connect("pressed", self.ship_leave_pressed)
+	get_node("UI/spawn_items").connect("pressed", self.spawn_items)
+
 	connection = get_node("/root/Connection")
 	connection.world = self
 	player_local

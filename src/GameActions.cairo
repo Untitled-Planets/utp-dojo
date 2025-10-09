@@ -436,9 +436,18 @@ pub mod GameActions {
             let span_1_i128: i128 = (*span.at(1)).try_into().unwrap();
             let span_2_i128: i128 = (*span.at(2)).try_into().unwrap();
             
-            let offset_x = (span_0_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
-            let offset_y = (span_1_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
-            let offset_z = (span_2_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let mut offset_x = (span_0_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            if (player_pos.x < 0) {
+                offset_x = offset_x * -1;
+            }
+            let mut offset_y = (span_1_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            if (player_pos.y < 0) {
+                offset_y = offset_y * -1;
+            }
+            let mut offset_z = (span_2_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            if (player_pos.z < 0) {
+                offset_z = offset_z * -1;
+            }
 
             println!("spawn offset {}, {}, {}", offset_x, offset_y, offset_z);
             let item_pos = Vec3 {

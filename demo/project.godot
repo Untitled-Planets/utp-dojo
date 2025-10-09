@@ -32,6 +32,9 @@ config/policies={
 }
 config/world_address="0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
 config/contract_address="0x03f4b2fbfdfefd5f24588cad670a55e90d19809eff3879f21f15370cdf540a9f"
+config/account/address="0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819"
+config/account/private_key="0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4"
+config/account/public_key="0x1e8965b7d0b20b91a62fe515dd991dc9fcb748acddf6b2cf18cec3bdd0f9f9a"
 
 [dojo.ariel@godotengine.org]
 
