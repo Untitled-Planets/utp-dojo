@@ -179,7 +179,7 @@ func ship_clicked(ship):
 
 func item_clicked(item):
 	if input_mode == InputModes.PlayerMove:
-		if player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
+		if false && player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
 			position_event(item.global_position)
 		else:
 			item_pickup(item)

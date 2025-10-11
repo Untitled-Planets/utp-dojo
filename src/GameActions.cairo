@@ -390,15 +390,18 @@ pub mod GameActions {
             let player_pos_model : PlayerPosition = world.read_model(player_id);
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
-            let mut area_x = player_pos.x / (AREA_SIZE * FP_UNIT).into();
+            let area_x_base = player_pos.x / (AREA_SIZE * FP_UNIT).into(); 
+            let mut area_x = area_x_base;
             if (player_pos.x < 0) {
                 area_x += 0xffffffff;
             }
-            let mut area_y = player_pos.y / (AREA_SIZE * FP_UNIT).into();
+            let area_y_base = player_pos.y / (AREA_SIZE * FP_UNIT).into(); 
+            let mut area_y = area_y_base;
             if (player_pos.y < 0) {
                 area_y += 0xffffffff;
             }
-            let mut area_z = player_pos.z / (AREA_SIZE * FP_UNIT).into();
+            let area_z_base = player_pos.z / (AREA_SIZE * FP_UNIT).into(); 
+            let mut area_z = area_z_base;
             if (player_pos.z < 0) {
                 area_z += 0xffffffff;
             }
@@ -451,9 +454,9 @@ pub mod GameActions {
 
             println!("spawn offset {}, {}, {}", offset_x, offset_y, offset_z);
             let item_pos = Vec3 {
-                x: area_x * FP_UNIT + offset_x,
-                y: area_y * FP_UNIT + offset_y,
-                z: area_z * FP_UNIT + offset_z,
+                x: area_x_base * FP_UNIT + offset_x,
+                y: area_y_base * FP_UNIT + offset_y,
+                z: area_z_base * FP_UNIT + offset_z,
             };
 
             let d2 = vec3_fp40_dist_sq(item_pos, player_pos);

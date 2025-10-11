@@ -12,6 +12,7 @@ name = "Message"
 
 [node name="Connection" type="Node"]
 script = ExtResource("1_c7jwa")
+debug_use_account = true
 query = SubResource("DojoQuery_erpqw")
 entity_sub = SubResource("EntitySubscription_erpqw")
 message_sub = SubResource("MessageSubscription_erpqw")
@@ -19,7 +20,6 @@ message_sub = SubResource("MessageSubscription_erpqw")
 [node name="ToriiClient" type="ToriiClient" parent="."]
 
 [node name="ControllerAccount" type="ControllerAccount" parent="."]
-chain_id = "WP_UTP_DOJO"
 
 [node name="Account" type="Account" parent="."]
 
