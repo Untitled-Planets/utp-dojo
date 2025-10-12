@@ -37,7 +37,7 @@ var players = {}
 @onready var controller_account: ControllerAccount = $ControllerAccount
 @onready var account : Account = $Account
 
-var world
+var world : World
 var policies
 
 func _settings_path():
@@ -162,18 +162,18 @@ func _update_position_model(data):
 	var pos = Vector3(data.pos.x.to_float(), data.pos.y.to_float(), data.pos.z.to_float())
 	var dst = Vector3(data.dest.x.to_float(), data.dest.y.to_float(), data.dest.z.to_float())
 	printt("updating model movement to dest ", data.dest.x.get_class(), data.dest.x.to_string(), data.dest.y.to_string(), data.dest.z.to_string())
-	world.call_deferred("player_movement", id, pos, dst)
+	world.player_movement(id, pos, dst)
 	pass
 
 func _update_player_model(data):
 	var id = data.id
 	var status = data.status_flags
-	world.call_deferred("player_updated", id, status)
+	world.player_updated(id, status)
 
 func _update_ship_model(data):
 	var owner = data.owner
 	var status = data.status_flags
-	world.call_deferred("ship_updated", owner, status)
+	world.ship_updated(owner, status)
 
 func _update_collectable_area(data):
 	

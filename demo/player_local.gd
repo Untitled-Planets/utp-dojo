@@ -11,7 +11,12 @@ func set_model_flags(p_flags):
 		world.set_input_mode(world.InputModes.ShipMove)
 
 func move_remote(pos, dst):
-	move_event(pos, dst)
+	if spawned:
+		position = dst
+		spawned = false
+		return
+	#move_event(pos, dst)
+	pass
 
 func move_local(pos):
 	printt("**** move local ", pos)

@@ -1,4 +1,5 @@
 extends Node3D
+class_name World
 
 var connection
 
@@ -179,7 +180,7 @@ func ship_clicked(ship):
 
 func item_clicked(item):
 	if input_mode == InputModes.PlayerMove:
-		if false && player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
+		if player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
 			position_event(item.global_position)
 		else:
 			item_pickup(item)
@@ -247,6 +248,9 @@ func spawn_items():
 	var seed = PackedByteArray()
 	seed.resize(32)
 	seed.fill(0)
+	
+	var epoc = 0
+	
 	var item_parent = get_node("items")
 
 	var area = _item_area(player_local.global_position)
@@ -261,7 +265,7 @@ func spawn_items():
 		pos_dir.z = -1
 
 	var type = 0
-	var items = area_get_item_list(seed, area, 0, type)
+	var items = area_get_item_list(seed, area, epoc, type)
 
 	var collected = 0
 	var key = [area, type]
@@ -271,7 +275,7 @@ func spawn_items():
 			for node in item_areas[key].nodes:
 				node.queue_free()
 			item_areas[key].nodes = []
-		if !"nodes" in item_areas[key]:
+		else:
 			item_areas[key].nodes = []
 	else:
 		item_areas[key] = { bitfield = 0, nodes = [] }
@@ -287,7 +291,7 @@ func spawn_items():
 		item_parent.add_child(node)
 		
 		node.global_position = Vector3(area_pos) + it * pos_dir
-		node.set_item_info(self, count, 0, 0, 0)
+		node.set_item_info(self, count, 0, area, epoc)
 		node.add_to_group("items")
 		count += 1
 		

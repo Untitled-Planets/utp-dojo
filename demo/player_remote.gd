@@ -1,7 +1,9 @@
 extends CharacterBody3D
+class_name PlayerRemote
 
 @onready var navigationAgent : NavigationAgent3D = $NavigationAgent3D
-var Speed = 5
+var Speed = 1
+var spawned = true
 
 var player_id = ""
 var model_status = 0 : set = set_model_flags
@@ -43,6 +45,11 @@ func set_player_id(p_id):
 
 func move_event(src, dst):
 	printt("move event ", src, dst)
+	if spawned:
+		position = dst
+		spawned = false
+		return
+	position = src
 	if !navigationAgent:
 		get_node("NavigationAgent3D").set_deferred("target_position", dst)
 		return
