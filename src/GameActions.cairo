@@ -10,6 +10,8 @@ pub trait IGameActions<T> {
     fn ship_switch_reference_body(ref self: T, reference_body: u128, position: Vec3, direction: Vec3);
     fn player_move(ref self: T, dst: Vec3);
     fn item_collect(ref self: T, collectable_type: u16, collectable_index: u8);
+
+    fn _debug_player_spawn(ref self: T, dst: Vec3);
 }
 
 
@@ -145,8 +147,8 @@ pub mod GameActions {
     const MAX_SPAWN: u8 = 128;
     const FP_LEN_SQ_EPSION: i128 = 0x40000000; // 2^30
 
-    const AREA_SIZE: i128 = 32;
-    const PLAYER_WALKING_SPEED: i128 = 1 * FP_UNIT;
+    const AREA_SIZE: i128 = 128;
+    const PLAYER_WALKING_SPEED: i128 = 5 * FP_UNIT;
     const MAX_PLAYER_WALK_EPSILON2: i128 = 5 * FP_UNIT;
     const MAX_SPAWN_DISTANCE_SQUARED: i128 = 2500 * FP_UNIT; // 50 meters
     const MAX_ITEM_PICKUP_D2: i128 = 64 * FP_UNIT; // 8 meters
@@ -337,12 +339,37 @@ pub mod GameActions {
             world.write_model(@ship_pos);
         }
 
+        fn _debug_player_spawn(ref self: ContractState, dst: Vec3) {
+            println!("-- Debug player spawn");
+            let mut world = self.world_default();
+            let player_id = get_caller_address();
+            println!("Player {:?} spawn to {},{},{}", player_id, dst.x, dst.y, dst.z);
+            let mut player : Player = world.read_model(player_id);
+            if (player.status_flags == 0) { // 1st spawn
+                player.status_flags = PlayerFlags::OnFoot;
+                world.write_model(@player);
+            }
+            assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'Player is not walking');
+
+            let mut player_pos_model : PlayerPosition = world.read_model(player_id);
+
+            player_pos_model.pos = dst;
+            player_pos_model.dest = dst;
+            player_pos_model.last_motion = get_block_timestamp().into();
+
+            world.write_model(@player_pos_model);
+            println!("-- _debug_player_spawn done");
+
+        }
+
+
         fn player_move(ref self: ContractState, dst: Vec3) {
             println!("-- player_move start");
             let mut world = self.world_default();
             let player_id = get_caller_address();
             println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
             let mut player : Player = world.read_model(player_id);
+
             if (player.status_flags == 0) { // 1st spawn
                 player.status_flags = PlayerFlags::OnFoot;
                 world.write_model(@player);
@@ -353,6 +380,7 @@ pub mod GameActions {
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
             if (player_pos_model.last_motion == 0) { // 1st spawn
                 player_pos_model.last_motion = get_block_timestamp().into();
+                player_pos_model.pos = dst;
             }
             println!("model dir is {},{},{}", player_pos_model.dir.x, player_pos_model.dir.y, player_pos_model.dir.z);
             println!("model pos is {},{},{}", player_pos_model.pos.x, player_pos_model.pos.y, player_pos_model.pos.z);
@@ -452,14 +480,19 @@ pub mod GameActions {
                 offset_z = offset_z * -1;
             }
 
+            println!("area_base {}, {}, {}", area_x_base, area_y_base, area_z_base);
             println!("spawn offset {}, {}, {}", offset_x, offset_y, offset_z);
             let item_pos = Vec3 {
-                x: area_x_base * FP_UNIT + offset_x,
-                y: area_y_base * FP_UNIT + offset_y,
-                z: area_z_base * FP_UNIT + offset_z,
+                x: area_x_base * AREA_SIZE * FP_UNIT + offset_x,
+                y: area_y_base * AREA_SIZE * FP_UNIT + offset_y,
+                z: area_z_base * AREA_SIZE * FP_UNIT + offset_z,
             };
 
+            println!("item pos {}, {}, {}", item_pos.x, item_pos.y, item_pos.z)
+            println!("player pos pos {}, {}, {}", player_pos.x, player_pos.y, player_pos.z)
+
             let d2 = vec3_fp40_dist_sq(item_pos, player_pos);
+            println!("distance sq {}", d2)
             assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
 
             // Get existing tracker or create a new one

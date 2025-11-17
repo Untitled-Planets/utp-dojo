@@ -230,7 +230,16 @@ func _item_area(pos) -> int:
 
 func _item_area_pos(pos):
 
-	pass
+	var area_pos = Vector3i(pos / area_size) * area_size
+	var pos_dir = Vector3(1, 1, 1)
+	if pos.x < 0:
+		pos_dir.x = -1
+	if pos.y < 0:
+		pos_dir.y = -1
+	if pos.z < 0:
+		pos_dir.z = -1
+
+	return [area_pos, pos_dir]
 
 
 func _has_bit(field, index:int):
@@ -255,15 +264,10 @@ func spawn_items():
 
 	var area = _item_area(player_local.global_position)
 	
-	var area_pos = Vector3i(player_local.global_position / area_size) * area_size
-	var pos_dir = Vector3(1, 1, 1)
-	if player_local.global_position.x < 0:
-		pos_dir.x = -1
-	if player_local.global_position.y < 0:
-		pos_dir.y = -1
-	if player_local.global_position.z < 0:
-		pos_dir.z = -1
-
+	var area_pos_info = _item_area_pos(player_local.global_posotion)
+	var area_pos = area_pos_info[0]
+	var pos_dir = area_pos_info[1]
+	
 	var type = 0
 	var items = area_get_item_list(seed, area, epoc, type)
 
