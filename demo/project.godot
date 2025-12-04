@@ -40,8 +40,8 @@ config/torii/worlds=Array[String]([])
 config/fixed_point/64=40
 config/debug/error=true
 config/debug/warning=true
-config/debug/info=false
-config/debug/debug=false
+config/debug/info=true
+config/debug/debug=true
 config/debug/success=true
 
 [dojo.ariel@godotengine.org]

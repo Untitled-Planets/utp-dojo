@@ -183,10 +183,12 @@ func _get_local_player_entity():
 	
 	var query:DojoQuery = DojoQuery.new()
 	var clause = DojoOptionClause.new()
-	clause.tag = 2 # CMember
+	clause.tag = DojoOptionClause.ClauseTag.Member
+	clause.comparison_operator = DojoOptionClause.ComparisonOperator.Eq
+	clause.member_tag = DojoOptionClause.MemberValueTag.PrimitiveValue
+	clause.primitive_tag = DojoOptionClause.PrimitiveTag.ContractAddress
 	clause.model = "utp_dojo-Player"
 	clause.member = "id"
-	clause.primitive_tag = 14 # ContractAddress
 	clause.value = get_local_id()
 	query.models = ["utp_dojo-Players"]
 	query.clause = clause
