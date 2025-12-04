@@ -2,7 +2,7 @@ extends CharacterBody3D
 class_name PlayerRemote
 
 @onready var navigationAgent : NavigationAgent3D = $NavigationAgent3D
-var Speed = 1
+var Speed = 5
 var spawned = true
 
 var player_id = ""

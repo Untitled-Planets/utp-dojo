@@ -22,20 +22,34 @@ var LOCAL_CHAIN_ID = "KATANA"
 @export var debug_use_account = false
 var account_addr = "0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
 var private_key = "0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b"
-var rpc
+var rpc_url
 var torii_rpc
 
 var queue
 
 var players = {}
 
+enum SessionState {
+	NONE,
+	LOGIN,
+	COMPLETED,
+	ERROR
+}
+var session_state : SessionState = SessionState.NONE
+@onready var session_timer: Timer = $session_timer
+var session_priv_key
+var session_retry_count = 0
+
+
 @export var query:DojoQuery
 @export var entity_sub:EntitySubscription
 @export var message_sub:MessageSubscription
 
-@onready var client: ToriiClient = $ToriiClient
-@onready var controller_account: ControllerAccount = $ControllerAccount
+@onready var torii_client: ToriiClient = $ToriiClient
+@onready var controller_account: DojoSessionAccount = $ControllerAccount
 @onready var account : Account = $Account
+
+var Policies := preload("policies.gd")
 
 var world : World
 var policies
@@ -52,39 +66,24 @@ func _settings_path():
 
 func _ready() -> void:
 	_debug_system_user = User.new()
-	_debug_system_user.initialize()
+	if !OS.has_feature("standalone"): # OS.is_debug_build():
+		_debug_system_user.initialize()
 	printt("local user is ", _debug_system_user.get_user_id())
-	var dojo = DojoC.new()
-	rpc = ProjectSettings.get_setting(_settings_path() + "/katana_url")
+	rpc_url = ProjectSettings.get_setting(_settings_path() + "/katana_url")
 	torii_rpc = ProjectSettings.get_setting(_settings_path() + "/torii_url")
-	WORLD_CONTRACT = ProjectSettings.get_setting(_settings_path() + "/world_address")
-	ACTIONS_CONTRACT = ProjectSettings.get_setting(_settings_path() + "/contract_address")
+
 	account_addr = ProjectSettings.get_setting(_settings_path() + "/account/address")
 	private_key = ProjectSettings.get_setting(_settings_path() + "/account/private_key")
 	
-	printt("getting property ", "dojo/config/account/address", ProjectSettings.get_setting("dojo/config/account/address"))
-	printt("******** fp default is ", ProjectSettings.get_setting(_settings_path() + "fixed_point/default"))
-	
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
-	client.world_address = WORLD_CONTRACT
-	client.torii_url = torii_rpc
-	controller_account.rpc_url = rpc
-	controller_account.chain_id = "UTP_DOJO"
-	controller_account.contract_address = ACTIONS_CONTRACT
-	policies = {
-		"player_move": "move the player",
-		"item_collect": "collect an item",
-		"ship_spawn": "ship_spawn",
-		"ship_despawn": "ship_despawn",
-		"ship_board": "ship_board",
-		"ship_unboard": "ship_unboard",
-		"ship_move": "ship_move",
-	}
-	#controller_account.policies = DojoPolicies.from_dictionary(policies)
 
-	controller_account.policies = policies
-	
+	entity_sub.world_addresses = [Policies.WORLD_CONTRACT]
+	message_sub.world_addresses = [Policies.WORLD_CONTRACT]
+	torii_client.torii_url = torii_rpc
+
+	session_timer.timeout.connect(self.check_session)
+
 	queue = DispatchQueue.new()
 	queue.create_serial()
 
@@ -101,22 +100,69 @@ func _torii_logger(_msg:String):
 	prints("[TORII LOGGER]", _msg)
 
 func connect_client() -> void:
-	client.create_client()
+	torii_client.create_client()
 
 func connect_controller() -> void:
 	if debug_use_account:
-		account.create(rpc, account_addr, private_key)
+		account.create(rpc_url, account_addr, private_key)
 		account.set_block_id()
 		_on_controller_account_controller_connected(true)
 		#_set_status("controller", true)
 	else:
-		controller_account.init_provider()
-		controller_account.create(policies)
-		#controller_account.setup()
+		session_login_start()
+
+func _get_priv_key():
+	return DojoHelpers.generate_private_key()
+
+func get_session_url() -> String:
+	session_priv_key = _get_priv_key()
+		
+	var base_url = "https://x.cartridge.gg/session"
+	var public_key = ControllerHelper.get_public_key(session_priv_key)
+	var redirect_uri = "about:blank"
+	var redirect_query_name = "startapp"
+	
+	var session_url = controller_account.generate_session_request_url(
+		base_url, 
+		public_key, 
+		rpc_url, 
+		Policies.policies_url, 
+#		redirect_uri, # Optional
+#		redirect_query_name # Optional
+		)
+		
+	return session_url
+
+
+func session_login_start():
+	var session_url: String = get_session_url()
+	OS.shell_open(session_url)
+	session_timer.start()
+	session_retry_count = 0
+	queue.dispatch(self._session_wait_thread)
+
+func _session_wait_thread():
+	session_state = SessionState.LOGIN
+	controller_account.create_from_subscribe(session_priv_key, rpc_url, "https://api.cartridge.gg", Policies.policies)
+	if controller_account.is_valid():
+		session_state = SessionState.COMPLETED
+	else:
+		session_state = SessionState.ERROR
+
+func check_session():
+	session_retry_count += 1
+	if session_state == SessionState.LOGIN:
+		return
+	elif session_state == SessionState.COMPLETED:
+		session_timer.stop()
+		_on_controller_account_controller_connected(true)
+		printt("session account info", controller_account.get_info())
+	elif session_state == SessionState.ERROR:
+		session_timer.stop()
 
 func _on_torii_client_client_connected(success: bool) -> void:
 	_set_status("client", success)
-	client.set_logger_callback(_torii_logger)
+	torii_client.set_logger_callback(_torii_logger)
 	if success:
 		connect_controller()
 
@@ -127,14 +173,36 @@ func _on_controller_account_controller_connected(success: bool) -> void:
 	_set_status("controller", success)
 	
 	if success:
-		push_warning(controller_account.chain_id)
+		#push_warning(controller_account.chain_id)
 		connected.emit()
 		_get_entities()
 		print("connected!")
 		create_subscriptions(_on_events,_on_entities)
 
+func _get_local_player_entity():
+	
+	var query:DojoQuery = DojoQuery.new()
+	var clause = DojoOptionClause.new()
+	clause.tag = 2 # CMember
+	clause.model = "utp_dojo-Player"
+	clause.member = "id"
+	clause.primitive_tag = 14 # ContractAddress
+	clause.value = get_local_id()
+	query.models = ["utp_dojo-Players"]
+	query.clause = clause
+	var data:Array = torii_client.get_entities(query)
+	
+	if data.size() > 0:
+		printt("********* local entities ", data)
+		_update_entity(data[0])
+		return
+
+	execute("_debug_player_spawn", [0, 0, 0, 0])
+
 func _get_entities():
-	var data = client.get_entities(DojoQuery.new())
+
+	_get_local_player_entity()
+	var data = torii_client.get_entities(DojoQuery.new())
 	printt("Entities:", data)
 	for e in data:
 		_update_entity(e)
@@ -225,9 +293,9 @@ func _on_torii_client_subscription_created(subscription_name: String) -> void:
 
 func create_subscriptions(events:Callable,entities:Callable) -> void:
 	print("creating entity sub")
-	client.on_entity_state_update(entities, entity_sub)
+	torii_client.on_entity_state_update(entities, entity_sub)
 	print("creating event sub")
-	client.on_event_message_update(events, message_sub)
+	torii_client.on_event_message_update(events, message_sub)
 	
 func execute(method, params):
 	queue.dispatch(self._execute.bind(method, params))
@@ -240,8 +308,9 @@ func _execute(method, params):
 			push_error("not connected")
 			return
 
-		controller_account.execute_from_outside(ACTIONS_CONTRACT, method, params)
-	
+		#controller_account.execute_from_outside(ACTIONS_CONTRACT, method, params)
+		controller_account.execute_from_outside([{"contract_address": Policies.ACTIONS_CONTRACT, "entrypoint": method, "calldata": params}])
+
 
 func _on_account_transaction_executed(success_message: Dictionary) -> void:
 	print(success_message)

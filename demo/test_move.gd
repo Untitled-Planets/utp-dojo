@@ -208,7 +208,7 @@ func ship_leave_pressed():
 	set_input_mode(InputModes.ShipLeave)
 	
 func respawn():
-	connection.execute("player_move", [Vector3()])
+	connection.execute("_debug_player_move", [0, Vector3()])
 
 func item_pickup(item):
 	connection.execute("item_collect", [item.type, item.index])
@@ -264,7 +264,7 @@ func spawn_items():
 
 	var area = _item_area(player_local.global_position)
 	
-	var area_pos_info = _item_area_pos(player_local.global_posotion)
+	var area_pos_info = _item_area_pos(player_local.global_position)
 	var area_pos = area_pos_info[0]
 	var pos_dir = area_pos_info[1]
 	

@@ -19,15 +19,14 @@ message_sub = SubResource("MessageSubscription_erpqw")
 
 [node name="ToriiClient" type="ToriiClient" parent="."]
 
-[node name="ControllerAccount" type="ControllerAccount" parent="."]
+[node name="ControllerAccount" type="DojoSessionAccount" parent="."]
 
 [node name="Account" type="Account" parent="."]
+
+[node name="session_timer" type="Timer" parent="."]
 
 [connection signal="client_connected" from="ToriiClient" to="." method="_on_torii_client_client_connected"]
 [connection signal="client_disconnected" from="ToriiClient" to="." method="_on_torii_client_client_disconnected"]
 [connection signal="subscription_created" from="ToriiClient" to="." method="_on_torii_client_subscription_created"]
-[connection signal="controller_connected" from="ControllerAccount" to="." method="_on_controller_account_controller_connected"]
-[connection signal="controller_disconnected" from="ControllerAccount" to="." method="_on_controller_account_controller_disconnected"]
-[connection signal="provider_status_updated" from="ControllerAccount" to="." method="_on_controller_account_provider_status_updated"]
 [connection signal="transaction_executed" from="Account" to="." method="_on_account_transaction_executed"]
 [connection signal="transaction_failed" from="Account" to="." method="_on_account_transaction_failed"]

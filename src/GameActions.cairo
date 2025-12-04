@@ -11,7 +11,7 @@ pub trait IGameActions<T> {
     fn player_move(ref self: T, dst: Vec3);
     fn item_collect(ref self: T, collectable_type: u16, collectable_index: u8);
 
-    fn _debug_player_spawn(ref self: T, dst: Vec3);
+    fn _debug_player_spawn(ref self: T, reference_body:u128, dst: Vec3);
 }
 
 
@@ -339,12 +339,14 @@ pub mod GameActions {
             world.write_model(@ship_pos);
         }
 
-        fn _debug_player_spawn(ref self: ContractState, dst: Vec3) {
+        fn _debug_player_spawn(ref self: ContractState, reference_body: u128, dst: Vec3) {
             println!("-- Debug player spawn");
             let mut world = self.world_default();
             let player_id = get_caller_address();
             println!("Player {:?} spawn to {},{},{}", player_id, dst.x, dst.y, dst.z);
             let mut player : Player = world.read_model(player_id);
+            player.reference_body = reference_body;
+
             if (player.status_flags == 0) { // 1st spawn
                 player.status_flags = PlayerFlags::OnFoot;
                 world.write_model(@player);
