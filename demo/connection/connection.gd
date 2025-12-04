@@ -14,8 +14,6 @@ var status = {
 
 var _debug_system_user: User
 
-var WORLD_CONTRACT = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
-var ACTIONS_CONTRACT = "0x044341cf0e678b7a53ecba53c4da9ef594108d58ce74193ea78da58e1c5b93bf"
 var SLOT_CHAIN_ID = "WP_UTP_DOJO"
 var LOCAL_CHAIN_ID = "KATANA"
 
@@ -203,7 +201,7 @@ func _get_local_player_entity():
 
 func _get_entities():
 
-	_get_local_player_entity()
+	#_get_local_player_entity()
 	var data = torii_client.get_entities(DojoQuery.new())
 	printt("Entities:", data)
 	for e in data:
@@ -304,7 +302,7 @@ func execute(method, params):
 
 func _execute(method, params):
 	if account.is_account_valid():
-		account.execute_raw(ACTIONS_CONTRACT, method, params)
+		account.execute_raw(Policies.ACTIONS_CONTRACT, method, params)
 	else:
 		if !status["controller"]:
 			push_error("not connected")
