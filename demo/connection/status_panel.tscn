@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://cts3kcdpdvjv3"]
+[gd_scene load_steps=9 format=3 uid="uid://cts3kcdpdvjv3"]
 
 [ext_resource type="PackedScene" uid="uid://b5vmo8llucetx" path="res://connection/status_indicator.tscn" id="1_66dw4"]
 [ext_resource type="Script" path="res://connection/status_panel.gd" id="1_82686"]
@@ -9,6 +9,87 @@ content_margin_top = 4.0
 content_margin_right = 4.0
 content_margin_bottom = 4.0
 bg_color = Color(0.2484, 0.2484, 0.2484, 1)
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_6xk8l"]
+size = Vector2(16, 16)
+
+[sub_resource type="Animation" id="Animation_556t2"]
+resource_name = "login"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("PanelStatus/login_spinner:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat64Array(0),
+"transitions": PackedFloat64Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("PanelStatus/login_spinner:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat64Array(0, 0.5, 1),
+"transitions": PackedFloat64Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 3.14159, 6.28319]
+}
+
+[sub_resource type="Animation" id="Animation_uemkx"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("PanelStatus/login_spinner:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat64Array(0),
+"transitions": PackedFloat64Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("PanelStatus/login_spinner:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat64Array(0),
+"transitions": PackedFloat64Array(1),
+"update": 0,
+"values": [0.0]
+}
+
+[sub_resource type="Animation" id="Animation_jedrg"]
+resource_name = "login_completed"
+length = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("PanelStatus/login_spinner:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat64Array(0),
+"transitions": PackedFloat64Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_08pir"]
+_data = {
+"RESET": SubResource("Animation_uemkx"),
+"login": SubResource("Animation_556t2"),
+"login_completed": SubResource("Animation_jedrg")
+}
 
 [node name="CanvasLayer" type="CanvasLayer"]
 layer = 10
@@ -73,3 +154,13 @@ type_name = "EntityUpdates"
 [node name="Button" type="Button" parent="PanelStatus/HBoxContainer"]
 layout_mode = 2
 text = "Connect"
+
+[node name="login_spinner" type="Sprite2D" parent="PanelStatus"]
+visible = false
+position = Vector2(251, 22)
+texture = SubResource("PlaceholderTexture2D_6xk8l")
+
+[node name="animation" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_08pir")
+}

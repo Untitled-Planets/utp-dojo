@@ -12,7 +12,6 @@ name = "Message"
 
 [node name="Connection" type="Node"]
 script = ExtResource("1_c7jwa")
-debug_use_account = true
 query = SubResource("DojoQuery_erpqw")
 entity_sub = SubResource("EntitySubscription_erpqw")
 message_sub = SubResource("MessageSubscription_erpqw")

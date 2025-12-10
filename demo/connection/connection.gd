@@ -29,7 +29,7 @@ var players = {}
 
 enum SessionState {
 	NONE,
-	LOGIN,
+	LOGIN, # this is while the user is in the browser logging in
 	COMPLETED,
 	ERROR
 }
@@ -141,11 +141,14 @@ func session_login_start():
 
 func _session_wait_thread():
 	session_state = SessionState.LOGIN
+	status_updated.emit.call_deferred()
 	controller_account.create_from_subscribe(session_priv_key, rpc_url, "https://api.cartridge.gg", Policies.policies)
 	if controller_account.is_valid():
 		session_state = SessionState.COMPLETED
+		status_updated.emit.call_deferred()
 	else:
 		session_state = SessionState.ERROR
+		status_updated.emit.call_deferred()
 
 func check_session():
 	session_retry_count += 1
@@ -188,7 +191,7 @@ func _get_local_player_entity():
 	clause.model = "utp_dojo-Player"
 	clause.member = "id"
 	clause.value = get_local_id()
-	query.models = ["utp_dojo-Players"]
+	query.models = ["utp_dojo-Player"]
 	query.clause = clause
 	var data:Array = torii_client.get_entities(query)
 	
@@ -200,8 +203,7 @@ func _get_local_player_entity():
 	execute("_debug_player_spawn", [0, 0, 0, 0])
 
 func _get_entities():
-
-	#_get_local_player_entity()
+	_get_local_player_entity()
 	var data = torii_client.get_entities(DojoQuery.new())
 	printt("Entities:", data)
 	for e in data:
