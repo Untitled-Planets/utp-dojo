@@ -309,6 +309,7 @@ pub mod GameActions {
                 dest: destination,
                 last_motion: get_block_timestamp().into(),
                 hyperspeed: p_hyperspeed,
+                reference_body: ship.reference_body,
             };
             world.write_model(@new_ship_pos);
         }
@@ -407,6 +408,7 @@ pub mod GameActions {
                 dir: dir,
                 dest: dst,
                 last_motion: get_block_timestamp().into(),
+                reference_body: player.reference_body,
             };
             world.write_model(@new_player_pos);
             println!("-- player_move done");

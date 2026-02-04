@@ -31,6 +31,7 @@ pub struct PlayerPosition {
     pub dir: Vec3,
     pub dest: Vec3,
     pub last_motion: u128,
+    pub reference_body: u128,
 }
 
 
@@ -54,6 +55,7 @@ pub struct ShipPosition {
     pub dest: Vec3,
     pub hyperspeed: bool,
     pub last_motion: u128,
+    pub reference_body: u128,
 }
 
 
