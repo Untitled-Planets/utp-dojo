@@ -269,6 +269,7 @@ pub mod GameActions {
             let mut player_pos : PlayerPosition = world.read_model(player_id);
             player_pos.pos = pos;
             player_pos.dest = pos;
+            player_pos.reference_body = ship.reference_body;
             world.write_model(@player_pos);
 
             ship.status_flags -= ShipFlags::Occupied;
@@ -276,6 +277,7 @@ pub mod GameActions {
 
             player.status_flags -= PlayerFlags::OnShip;
             player.status_flags += PlayerFlags::OnFoot;
+            player.reference_body = ship.reference_body;
             world.write_model(@player);
         }
 
@@ -336,6 +338,7 @@ pub mod GameActions {
             ship_pos.dest = position;
             ship_pos.hyperspeed = false;
             ship_pos.dir = direction;
+            ship_pos.reference_body = reference_body;
 
             world.write_model(@ship_pos);
         }
