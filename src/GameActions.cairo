@@ -258,8 +258,14 @@ pub mod GameActions {
             //let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             //assert(ship_pos.speed > 0, 'ShipMoving');
             
-            let ship_pos : ShipPosition = world.read_model(player_id);
-            let dist2 = vec3_fp40_dist_sq(ship_pos.pos, pos);
+            let ship_pos_model : ShipPosition = world.read_model(player_id);
+            let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
+            if (ship_pos_model.hyperspeed) {
+                speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
+            };
+            let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
+
+            let dist2 = vec3_fp40_dist_sq(ship_pos, pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
             let mut player : Player = world.read_model(player_id);
@@ -288,14 +294,17 @@ pub mod GameActions {
 
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
+            if (p_hyperspeed) {
+                assert(ship.reference_body == DEFAULT_REFERENCE_BODY_ID, 'Hyperspeed not possible');
+            };
 
             // Get current position from model
             let mut ship_pos_model : ShipPosition = world.read_model(player_id);
             let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
-            if (p_hyperspeed) {
-                assert(ship.reference_body == DEFAULT_REFERENCE_BODY_ID, 'Hyperspeed not possible');
+            if (ship_pos_model.hyperspeed) {
                 speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
             };
+
             let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
 
             // calculate new dir
