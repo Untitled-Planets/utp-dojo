@@ -74,7 +74,9 @@ pub struct Planet {
 #[dojo::model]
 pub struct CollectableTracker {
     #[key]
-    pub area: u32,
+    pub area: [u32; 8],
+    #[key]
+    pub reference_body: u128,
     #[key]
     pub collectable_type: u16,
     pub bitfield: u128,

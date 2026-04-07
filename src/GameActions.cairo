@@ -435,30 +435,37 @@ pub mod GameActions {
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
             let area_x_base = player_pos.x / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_x = area_x_base;
+            let mut area_x: u32 = (area_x_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.x < 0) {
-                area_x += 0xffffffff;
+                area_x = 0xffffffff - area_x;
             }
+
             let area_y_base = player_pos.y / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_y = area_y_base;
+            let mut area_y: u32 = (area_y_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.y < 0) {
-                area_y += 0xffffffff;
+                area_y = 0xffffffff - area_y;
             }
             let area_z_base = player_pos.z / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_z = area_z_base;
+            let mut area_z: u32 = (area_z_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.z < 0) {
-                area_z += 0xffffffff;
+                area_z = 0xffffffff - area_z;
             }
-            let area_hash : u32 = ((area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)).try_into().unwrap();
-            println!("player is in area {} {}, {}, {}", area_hash, area_x, area_y, area_z);
+
+            let mut area_seed = ByteArray { data: array![], pending_word: 0, pending_word_len: 0 };
+            append_bytearray(ref area_seed, area_x.into(), 4);
+            append_bytearray(ref area_seed, area_y.into(), 4);
+            append_bytearray(ref area_seed, area_z.into(), 4);
+            let mut area_hash: [u32; 8] = core::sha256::compute_sha256_byte_array(@area_seed);
+
+            println!("player is in area {:?} {}, {}, {}", area_hash, area_x, area_y, area_z);
 
             // Create a ByteArray from a string literal and then append values
-            let mut count_seed = ByteArray { data: array![], pending_word: 0, pending_word_len: 0 };
+            let mut count_seed = area_seed.clone();
             // Convert values to bytes before appending
-            append_bytearray(ref count_seed, planet.seed.into(), 32);
+            append_bytearray(ref count_seed, player.reference_body.into(), 16);
             let epoc:u32 = planet.epoc;
             append_bytearray(ref count_seed, epoc.into(), 4);
-            append_bytearray(ref count_seed, area_hash.into(), 4);
+            //append_bytearray(ref count_seed, area_hash.into(), 32);
             append_bytearray(ref count_seed, collectable_type.into(), 2);
             //let count_seed = planet.seed + planet.epoc + area_hash + collectable_type.into();
             
@@ -512,7 +519,7 @@ pub mod GameActions {
             assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
 
             // Get existing tracker or create a new one
-            let mut tracker : CollectableTracker = world.read_model((area_hash, collectable_type));
+            let mut tracker : CollectableTracker = world.read_model((area_hash, player.reference_body, collectable_type));
             
             let bitfield : u128 = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
             let bit_mask : u128 = 2_u128.pow(collectable_index.into());
@@ -526,6 +533,7 @@ pub mod GameActions {
 
             tracker.area = area_hash;
             tracker.collectable_type = collectable_type;
+            tracker.reference_body = player.reference_body;
 
             world.write_model(@tracker);
 
