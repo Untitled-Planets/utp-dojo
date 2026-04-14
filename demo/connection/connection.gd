@@ -25,6 +25,8 @@ var torii_rpc
 
 var queue
 
+var session_info := {}
+
 var players = {}
 
 enum SessionState {
@@ -39,13 +41,9 @@ var session_priv_key
 var session_retry_count = 0
 
 
-@export var query:DojoQuery
-@export var entity_sub:EntitySubscription
-@export var message_sub:MessageSubscription
-
 @onready var torii_client: ToriiClient = $ToriiClient
 @onready var controller_account: DojoSessionAccount = $ControllerAccount
-@onready var account : Account = $Account
+#@onready var account : Account = $Account
 
 var Policies := preload("policies.gd")
 
@@ -76,11 +74,9 @@ func _ready() -> void:
 	OS.set_environment("RUST_BACKTRACE", "full")
 	OS.set_environment("RUST_LOG", "debug")
 
-	entity_sub.world_addresses = [Policies.WORLD_CONTRACT]
-	message_sub.world_addresses = [Policies.WORLD_CONTRACT]
-	torii_client.torii_url = torii_rpc
-
 	session_timer.timeout.connect(self.check_session)
+
+	#torii_client.connected.connect(_on_torii_client_client_connected)
 
 	queue = DispatchQueue.new()
 	queue.create_serial()
@@ -98,19 +94,14 @@ func _torii_logger(_msg:String):
 	prints("[TORII LOGGER]", _msg)
 
 func connect_client() -> void:
-	torii_client.create_client()
+	var _client_connected = torii_client.connect(torii_rpc)
+	_on_torii_client_client_connected(_client_connected)
 
 func connect_controller() -> void:
-	if debug_use_account:
-		account.create(rpc_url, account_addr, private_key)
-		account.set_block_id()
-		_on_controller_account_controller_connected(true)
-		#_set_status("controller", true)
-	else:
-		session_login_start()
+	session_login_start()
 
 func _get_priv_key():
-	return DojoHelpers.generate_private_key()
+	return ControllerHelper.generate_private_key()
 
 func get_session_url() -> String:
 	session_priv_key = _get_priv_key()
@@ -142,7 +133,7 @@ func session_login_start():
 func _session_wait_thread():
 	session_state = SessionState.LOGIN
 	status_updated.emit.call_deferred()
-	controller_account.create_from_subscribe(session_priv_key, rpc_url, "https://api.cartridge.gg", Policies.policies)
+	controller_account.create_from_subscribe(session_priv_key, rpc_url, Policies.policies, "https://api.cartridge.gg")
 	if controller_account.is_valid():
 		session_state = SessionState.COMPLETED
 		status_updated.emit.call_deferred()
@@ -156,14 +147,16 @@ func check_session():
 		return
 	elif session_state == SessionState.COMPLETED:
 		session_timer.stop()
+		session_info = controller_account.get_info()
 		_on_controller_account_controller_connected(true)
 		printt("session account info", controller_account.get_info())
 	elif session_state == SessionState.ERROR:
 		session_timer.stop()
 
 func _on_torii_client_client_connected(success: bool) -> void:
+	printt("torii client connected")
 	_set_status("client", success)
-	torii_client.set_logger_callback(_torii_logger)
+#	torii_client.set_logger_callback(_torii_logger)
 	if success:
 		connect_controller()
 
@@ -181,44 +174,45 @@ func _on_controller_account_controller_connected(success: bool) -> void:
 		create_subscriptions(_on_events,_on_entities)
 
 func _get_local_player_entity():
-	
-	var query:DojoQuery = DojoQuery.new()
-	var clause = DojoOptionClause.new()
-	clause.tag = DojoOptionClause.ClauseTag.Member
-	clause.comparison_operator = DojoOptionClause.ComparisonOperator.Eq
-	clause.member_tag = DojoOptionClause.MemberValueTag.PrimitiveValue
-	clause.primitive_tag = DojoOptionClause.PrimitiveTag.ContractAddress
-	clause.model = "utp_dojo-Player"
-	clause.member = "id"
-	clause.value = get_local_id()
-	query.models = ["utp_dojo-Player"]
-	query.clause = clause
-	var data:Array = torii_client.get_entities(query)
-	
-	if data.size() > 0:
+
+	var query : DojoQuery = DojoQuery.new()
+	var clause = MemberClause.new()
+#	
+	clause.member("id")
+	clause.op(MemberClause.ComparisonOperator.Eq)
+	var _addr = get_local_id()
+	clause.hex(_addr, MemberClause.PrimitiveTag.ContractAddress)
+#	clause.int(2)
+	clause.model("utp_dojo-Player")
+	query.with_clause(clause)
+	query.models(["utp_dojo-Player", "utp_dojo-PlayerPosition", "utp_dojo-Spaceship", "utp_dojo-ShipPosition"])
+	var data:Dictionary
+	data = torii_client.entities(query)
+
+	if data.items.size() > 0:
 		printt("********* local entities ", data)
-		_update_entity(data[0])
+		_update_entity(data.items[0])
 		return
 
 	execute("_debug_player_spawn", [0, 0, 0, 0])
 
 func _get_entities():
 	_get_local_player_entity()
-	var data = torii_client.get_entities(DojoQuery.new())
+	var data = torii_client.entities(DojoQuery.new())
 	printt("Entities:", data)
-	for e in data:
+	for e in data.items:
 		_update_entity(e)
 
 func get_local_id():
-	if debug_use_account:
-		if !account.is_account_valid():
-			return null
-		return account.get_address()
-	else:
-		if !status["controller"]:
-			return null
-			
-		return controller_account.get_address()
+	if !status["controller"]:
+		return null
+
+	var id = controller_account.get_address()
+	if id.length() < 67:
+		id = id.replace("0x","0x0")
+	return id
+
+	#return session_info["address"]
 
 func _on_events(args:Dictionary) -> void:
 	printt("*** got event", args)
@@ -247,7 +241,7 @@ func _update_ship_model(data):
 
 func _update_collectable_area(data):
 	
-	var area = data.area
+	var area = data.area # this has to match the area_hash stored in world
 	var type = data.collectable_type
 	var bitfield = data.bitfield
 	var epoc = data.epoc
@@ -267,19 +261,21 @@ func _update_ship_position_model(data):
 	world.call_deferred("ship_movement", id, pos, dst)
 
 func _update_entity(data):
-	for model in data.models:
-		if "utp_dojo-Player" in model:
-			_update_player_model(model["utp_dojo-Player"])
-		elif "utp_dojo-PlayerPosition" in model:
-			_update_position_model(model["utp_dojo-PlayerPosition"])
-		elif "utp_dojo-Spaceship" in model:
-			_update_ship_model(model["utp_dojo-Spaceship"])
-		elif "utp_dojo-ShipPosition" in model:
-			_update_ship_position_model(model["utp_dojo-ShipPosition"])
-		elif "utp_dojo-CollectableTracker" in model:
-			_update_collectable_area(model["utp_dojo-CollectableTracker"])
-		elif "utp_dojo-InventoryItem" in model:
-			_update_inventory(model["utp_dojo-InventoryItem"])
+	for mkey in data.models:
+		printt("got event ", mkey, data.models[mkey])
+		var model = data.models[mkey]
+		if mkey == "utp_dojo-Player":
+			_update_player_model(model)
+		elif mkey == "utp_dojo-PlayerPosition":
+			_update_position_model(model)
+		elif mkey == "utp_dojo-Spaceship":
+			_update_ship_model(model)
+		elif mkey == "utp_dojo-ShipPosition":
+			_update_ship_position_model(model)
+		elif mkey == "utp_dojo-CollectableTracker":
+			_update_collectable_area(model)
+		elif mkey == "utp_dojo-InventoryItem":
+			_update_inventory(model)
 
 func _on_controller_account_controller_disconnected() -> void:
 	_set_status("controller", false)
@@ -294,24 +290,26 @@ func _on_torii_client_subscription_created(subscription_name: String) -> void:
 		_set_status("events", true)
 
 func create_subscriptions(events:Callable,entities:Callable) -> void:
-	print("creating entity sub")
-	torii_client.on_entity_state_update(entities, entity_sub)
-	print("creating event sub")
-	torii_client.on_event_message_update(events, message_sub)
+	var entity_sub = DojoCallback.new()
+	entity_sub.on_update = entities
+	torii_client.subscribe_entity_updates(DojoClause.new(), [Policies.WORLD_CONTRACT], entity_sub)
+	
+	var message_sub = DojoCallback.new()
+	message_sub.on_update = events
+	torii_client.subscribe_transaction_updates({}, message_sub)
 	
 func execute(method, params):
 	queue.dispatch(self._execute.bind(method, params))
 
 func _execute(method, params):
-	if account.is_account_valid():
-		account.execute_raw(Policies.ACTIONS_CONTRACT, method, params)
+	if controller_account.is_valid():
+		printt("execute ", Policies.ACTIONS_CONTRACT, method, params)
+		var thx = controller_account.execute([{"contract_address": Policies.ACTIONS_CONTRACT, "entrypoint": method, "calldata": [params]}])
+		if not thx.begins_with("0x"):
+			push_error("Failed %s with params %s" % [method, params])
+			print_stack()
 	else:
-		if !status["controller"]:
-			push_error("not connected")
-			return
-
-		#controller_account.execute_from_outside(ACTIONS_CONTRACT, method, params)
-		controller_account.execute_from_outside([{"contract_address": Policies.ACTIONS_CONTRACT, "entrypoint": method, "calldata": params}])
+		push_error("Invalid session, ignoring execute %s" % method)
 
 
 func _on_account_transaction_executed(success_message: Dictionary) -> void:

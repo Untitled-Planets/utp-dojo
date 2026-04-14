@@ -23,7 +23,7 @@ var input_mode
 const ship_board_distance = 5
 const item_pickup_distance = 5
 
-const area_size = 32
+const area_size = 128
 
 func update_inventory(user, type, count):
 	
@@ -113,6 +113,7 @@ func player_movement(id, src, dst, p_recursive=false):
 
 	players[id].move_event(src, dst)
 	
+	var local_id = connection.get_local_id()
 	if id == connection.get_local_id():
 		player_local.move_remote(src, dst)
 
@@ -178,9 +179,9 @@ func ship_clicked(ship):
 	else:
 		position_event(ship.global_position)
 
-func item_clicked(item):
+func item_clicked(item, p_move):
 	if input_mode == InputModes.PlayerMove:
-		if player_local.global_position.distance_to(item.global_position) > item_pickup_distance:
+		if p_move:
 			position_event(item.global_position)
 		else:
 			item_pickup(item)
@@ -208,25 +209,29 @@ func ship_leave_pressed():
 	set_input_mode(InputModes.ShipLeave)
 	
 func respawn():
-	connection.execute("_debug_player_move", [0, Vector3()])
+	connection.execute("_debug_player_spawn", [0, Vector3()])
 
 func item_pickup(item):
 	connection.execute("item_collect", [item.type, item.index])
 
-func _item_area(pos) -> int:
+func _item_area(pos) -> Array:
 	var area_x := int(pos.x / area_size)
 	if pos.x < 0:
-		area_x += 0xffffffff;
+		area_x = 0xffffffff - area_x;
 
 	var area_y := int(pos.y / area_size)
 	if pos.y < 0:
-		area_y += 0xffffffff;
+		area_y = 0xffffffff - area_y;
 	
 	var area_z := int(pos.z / area_size)
 	if pos.z < 0:
-		area_z += 0xffffffff;
+		area_z = 0xffffffff - area_z;
 		
-	return (area_x % 1024) * 1024 * 1024 + (area_y % 1024) * 1024 + (area_z % 1024)
+	
+	return [area_x, area_y, area_z]
+
+func _item_area_hash(area):
+	return ""
 
 func _item_area_pos(pos):
 
@@ -254,15 +259,16 @@ func _has_bit(field, index:int):
 	return bytes[byte_i] & (1<<bit_i)
 
 func spawn_items():
-	var seed = PackedByteArray()
-	seed.resize(32)
-	seed.fill(0)
+	var seed = StreamPeerBuffer.new()
+	seed.put_64(0) # reference body as int
+	seed.put_64(0) # fill since reference body is u128
 	
 	var epoc = 0
 	
 	var item_parent = get_node("items")
 
 	var area = _item_area(player_local.global_position)
+	var area_hash = _item_area_hash(area) # this hash has to match the hash sent by the collectable tracker entity
 	
 	var area_pos_info = _item_area_pos(player_local.global_position)
 	var area_pos = area_pos_info[0]
@@ -272,7 +278,7 @@ func spawn_items():
 	var items = area_get_item_list(seed, area, epoc, type)
 
 	var collected = 0
-	var key = [area, type]
+	var key = [area_hash, type]
 	if key in item_areas:
 		collected = item_areas[key].bitfield
 		if "nodes" in item_areas[key]:
@@ -295,7 +301,7 @@ func spawn_items():
 		item_parent.add_child(node)
 		
 		node.global_position = Vector3(area_pos) + it * pos_dir
-		node.set_item_info(self, count, 0, area, epoc)
+		node.set_item_info(self, count, 0, area_hash, epoc)
 		node.add_to_group("items")
 		count += 1
 		
@@ -308,9 +314,11 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 	printt("items for area ", p_area, p_type)
 
 	var buffer = StreamPeerBuffer.new()
-	buffer.put_data(p_planet_seed)
+	buffer.put_32(p_area[0])
+	buffer.put_32(p_area[1])
+	buffer.put_32(p_area[2])
+	buffer.put_data(p_planet_seed.data_array)
 	buffer.put_32(p_epoc)
-	buffer.put_32(p_area)
 	buffer.put_16(p_type)
 
 	printt("buffer before hash", buffer.data_array)
@@ -356,7 +364,7 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 		var z32 = hash_32[2] & 0xFFFFFFFF
 		
 		const v32_max = 0xffffffff
-		var pos = (Vector3(x32, y32, z32) / v32_max) * 32
+		var pos = (Vector3(x32, y32, z32) / v32_max) * area_size
 
 		ret.push_back(pos)
 	

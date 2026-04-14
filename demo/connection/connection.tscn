@@ -1,31 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://b75yggsnay1mo"]
+[gd_scene format=3 uid="uid://b75yggsnay1mo"]
 
-[ext_resource type="Script" path="res://connection/connection.gd" id="1_c7jwa"]
+[ext_resource type="Script" uid="uid://b51diho8wo4oo" path="res://connection/connection.gd" id="1_c7jwa"]
 
-[sub_resource type="DojoQuery" id="DojoQuery_erpqw"]
-
-[sub_resource type="EntitySubscription" id="EntitySubscription_erpqw"]
-name = "Entity"
-
-[sub_resource type="MessageSubscription" id="MessageSubscription_erpqw"]
-name = "Message"
-
-[node name="Connection" type="Node"]
+[node name="Connection" type="Node" unique_id=819162380]
 script = ExtResource("1_c7jwa")
-query = SubResource("DojoQuery_erpqw")
-entity_sub = SubResource("EntitySubscription_erpqw")
-message_sub = SubResource("MessageSubscription_erpqw")
 
-[node name="ToriiClient" type="ToriiClient" parent="."]
+[node name="ToriiClient" type="ToriiClient" parent="." unique_id=1851138091]
 
-[node name="ControllerAccount" type="DojoSessionAccount" parent="."]
+[node name="ControllerAccount" type="DojoSessionAccount" parent="." unique_id=736587779]
 
-[node name="Account" type="Account" parent="."]
-
-[node name="session_timer" type="Timer" parent="."]
-
-[connection signal="client_connected" from="ToriiClient" to="." method="_on_torii_client_client_connected"]
-[connection signal="client_disconnected" from="ToriiClient" to="." method="_on_torii_client_client_disconnected"]
-[connection signal="subscription_created" from="ToriiClient" to="." method="_on_torii_client_subscription_created"]
-[connection signal="transaction_executed" from="Account" to="." method="_on_account_transaction_executed"]
-[connection signal="transaction_failed" from="Account" to="." method="_on_account_transaction_failed"]
+[node name="session_timer" type="Timer" parent="." unique_id=1685920899]

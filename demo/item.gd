@@ -31,8 +31,8 @@ func collected():
 	queue_free()
 
 func _clicked(camera, event, pos, normal, shape):
-	if event.is_pressed() && event.is_action("select"):
-		world.item_clicked(self)
+	if event.is_pressed():
+		world.item_clicked(self, event.is_action("move"))
 
 
 func _ready():

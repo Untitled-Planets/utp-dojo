@@ -8,11 +8,15 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="ClickToMoveGodot4Tutorial"
 run/main_scene="res://TestMove.tscn"
-config/features=PackedStringArray("4.3", "Double Precision", "Forward Plus")
+config/features=PackedStringArray("4.6", "Double Precision", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -44,11 +48,11 @@ config/debug/info=true
 config/debug/debug=true
 config/debug/success=true
 
-[dojo.ariel@godotengine.org]
+[dojo.puntob@gmail.com]
 
 config/katana_url="https://api.cartridge.gg/x/utp-dojo/katana"
 config/torii_url="https://api.cartridge.gg/x/utp-dojo/torii"
-config/contract_address="0x047a59e5f0a1bc25baa96868eb69e73c23f630e3ced5759636e69ef312b7b176"
+config/contract_address="0x06184c0ca47c9113f2bc0a370696399c2de3781bcc33dbb2c34f274eb3542dcc"
 config/world_address="0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
 config/account/address="0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7"
 config/account/private_key="0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b"
