@@ -456,8 +456,9 @@ pub mod GameActions {
             append_bytearray(ref area_seed, area_y.into(), 4);
             append_bytearray(ref area_seed, area_z.into(), 4);
             let mut area_hash: [u32; 8] = core::sha256::compute_sha256_byte_array(@area_seed);
+            let mut area_id: u128 = area_x.into() + (area_y.into() * 2_u128.pow(32)) + (area_z.into() * 2_u128.pow(64));
 
-            println!("player is in area {:?} {}, {}, {}", area_hash, area_x, area_y, area_z);
+            println!("player is in area {:?} {} {}, {}, {}", area_hash, area_id, area_x, area_y, area_z);
 
             // Create a ByteArray from a string literal and then append values
             let mut count_seed = area_seed.clone();
@@ -519,7 +520,7 @@ pub mod GameActions {
             assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
 
             // Get existing tracker or create a new one
-            let mut tracker : CollectableTracker = world.read_model((area_hash, player.reference_body, collectable_type));
+            let mut tracker : CollectableTracker = world.read_model((area_id, player.reference_body, collectable_type));
             
             let bitfield : u128 = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
             let bit_mask : u128 = 2_u128.pow(collectable_index.into());
@@ -531,7 +532,7 @@ pub mod GameActions {
             tracker.bitfield = bitfield | bit_mask;
             tracker.epoc = planet.epoc;
 
-            tracker.area = area_hash;
+            tracker.area = area_id;
             tracker.collectable_type = collectable_type;
             tracker.reference_body = player.reference_body;
 

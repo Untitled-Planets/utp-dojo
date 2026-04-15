@@ -1,0 +1,6 @@
+[dev]
+dev = true
+seed = "0"
+total_account = "10"
+no_fee = true
+no_account_validation = true

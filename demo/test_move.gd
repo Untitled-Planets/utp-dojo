@@ -230,8 +230,24 @@ func _item_area(pos) -> Array:
 	
 	return [area_x, area_y, area_z]
 
-func _item_area_hash(area):
-	return ""
+func _item_area_hash(p_area):
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_32(p_area[0])
+	buffer.put_32(p_area[1])
+	buffer.put_32(p_area[2])
+
+	var ctx = HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	# Open the file to hash.
+	ctx.update(buffer.data_array)
+	# Get the computed hash.
+	var res = ctx.finish()
+	res.reverse()
+	var b32hash = res.to_int32_array()
+	b32hash.reverse()
+	
+	var ret = Array(b32hash)
+	
 
 func _item_area_pos(pos):
 
