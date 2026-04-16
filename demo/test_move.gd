@@ -236,21 +236,13 @@ func _item_area_hash(p_area):
 	var area_y_buf := U128.from_int(p_area[1]).to_bytes()
 	var area_z_buf := U128.from_int(p_area[2]).to_bytes()
 
-	printt("area is ", p_area, U128.from_int(p_area[0]), area_x_buf)
-	
 	var shift_buf = PackedByteArray()
 	shift_buf.resize(16)
-	var pos = 0
-	for i in range(16):
-		if i < 4:
-			shift_buf[pos] = area_x_buf[12 + i]
-		elif i < 8:
-			shift_buf[pos] = area_y_buf[12 + (i - 4)]
-		elif i < 12:
-			shift_buf[pos] = area_z_buf[12 + (i - 8)]
-		else:
-			shift_buf[pos] = 0
-		pos += 1
+	for i in range(4):
+		shift_buf[i] = 0
+		shift_buf[i+4] = area_z_buf[12+i]
+		shift_buf[i+8] = area_y_buf[12+i]
+		shift_buf[i+12] = area_x_buf[12+i]
 
 	return U128.from_variant(shift_buf).to_string()
 
