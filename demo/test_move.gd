@@ -246,6 +246,8 @@ func _item_area_hash(p_area):
 			shift_buf[pos] = area_y_buf[i - 4]
 		elif i < 12:
 			shift_buf[pos] = area_z_buf[i - 8]
+		else:
+			shift_buf[pos] = 0
 		pos += 1
 
 	return U128.from_variant(shift_buf).to_string()
