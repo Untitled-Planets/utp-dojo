@@ -231,23 +231,25 @@ func _item_area(pos) -> Array:
 	return [area_x, area_y, area_z]
 
 func _item_area_hash(p_area):
-	var buffer = StreamPeerBuffer.new()
-	buffer.put_32(p_area[0])
-	buffer.put_32(p_area[1])
-	buffer.put_32(p_area[2])
+	
+	var area_x_buf := U128.from_int(p_area[0]).to_bytes()
+	var area_y_buf := U128.from_int(p_area[1]).to_bytes()
+	var area_z_buf := U128.from_int(p_area[2]).to_bytes()
+	
+	var shift_buf = PackedByteArray()
+	shift_buf.resize(16)
+	var pos = 0
+	for i in range(16):
+		if i < 4:
+			shift_buf[pos] = area_x_buf[i]
+		elif i < 8:
+			shift_buf[pos] = area_y_buf[i - 4]
+		elif i < 12:
+			shift_buf[pos] = area_z_buf[i - 8]
+		pos += 1
 
-	var ctx = HashingContext.new()
-	ctx.start(HashingContext.HASH_SHA256)
-	# Open the file to hash.
-	ctx.update(buffer.data_array)
-	# Get the computed hash.
-	var res = ctx.finish()
-	res.reverse()
-	var b32hash = res.to_int32_array()
-	b32hash.reverse()
-	
-	var ret = Array(b32hash)
-	
+	return U128.from_variant(shift_buf).to_string()
+
 
 func _item_area_pos(pos):
 
@@ -285,6 +287,7 @@ func spawn_items():
 
 	var area = _item_area(player_local.global_position)
 	var area_hash = _item_area_hash(area) # this hash has to match the hash sent by the collectable tracker entity
+	printt("spawning for area hash ", area_hash)
 	
 	var area_pos_info = _item_area_pos(player_local.global_position)
 	var area_pos = area_pos_info[0]
@@ -387,7 +390,7 @@ func area_get_item_list(p_planet_seed, p_area, p_epoc, p_type):
 	return ret
 
 func item_update_area(area, type, bitfield, epoc):
-
+	printt("updating item area ", area)
 	var key = [area, type]
 	if !(key in item_areas):
 		item_areas[key] = { }

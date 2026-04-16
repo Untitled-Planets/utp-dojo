@@ -241,7 +241,7 @@ func _update_ship_model(data):
 
 func _update_collectable_area(data):
 	
-	var area = data.area # this has to match the area_hash stored in world
+	var area = data.area.to_string() # this has to match the area_hash stored in world
 	var type = data.collectable_type
 	var bitfield = data.bitfield
 	var epoc = data.epoc

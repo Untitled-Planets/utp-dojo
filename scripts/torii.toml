@@ -1,3 +1,3 @@
 # torii.toml
-rpc = "https://api.cartridge.gg/x/utp-dojo/katana"
+rpc = "https://api.cartridge.gg/x/utp-dojo2/katana"
 world_address = "0x072593bd6b7770a56ff9b9ec7747755f0c681a7f7dc09133c518b7150efe5949"
