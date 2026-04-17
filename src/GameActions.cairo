@@ -384,11 +384,6 @@ pub mod GameActions {
             let player_id = get_caller_address();
             println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
             let mut player : Player = world.read_model(player_id);
-
-            if (player.status_flags == 0) { // 1st spawn
-                player.status_flags = PlayerFlags::OnFoot;
-                world.write_model(@player);
-            }
             assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'Player is not walking');
 
             // Get current position from model

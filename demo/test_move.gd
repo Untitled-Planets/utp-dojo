@@ -267,6 +267,7 @@ func _has_bit(field, index:int):
 		return field & (1<<index)
 		
 	var bytes = field.to_bytes()
+	bytes.reverse()
 	var byte_i = int(index / 8)
 	var bit_i = int(index % 8)
 	

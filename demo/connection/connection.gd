@@ -189,7 +189,7 @@ func _get_local_player_entity():
 	var data:Dictionary
 	data = torii_client.entities(query)
 
-	if data.items.size() > 0:
+	if data.has("items") && data.items.size() > 0:
 		printt("********* local entities ", data)
 		_update_entity(data.items[0])
 		return
@@ -208,8 +208,8 @@ func get_local_id():
 		return null
 
 	var id = controller_account.get_address()
-	if id.length() < 67:
-		id = id.replace("0x","0x0")
+	#if id.length() < 67:
+	#	id = id.replace("0x","0x0")
 	return id
 
 	#return session_info["address"]
