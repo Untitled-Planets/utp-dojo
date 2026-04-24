@@ -430,18 +430,18 @@ pub mod GameActions {
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
             let area_x_base = player_pos.x / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_x: u32 = (area_x_base % 0x7fffffff).try_into().unwrap();
+            let mut area_x: u32 = abs_value(area_x_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.x < 0) {
                 area_x = 0xffffffff - area_x;
             }
 
             let area_y_base = player_pos.y / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_y: u32 = (area_y_base % 0x7fffffff).try_into().unwrap();
+            let mut area_y: u32 = abs_value(area_y_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.y < 0) {
                 area_y = 0xffffffff - area_y;
             }
             let area_z_base = player_pos.z / (AREA_SIZE * FP_UNIT).into(); 
-            let mut area_z: u32 = (area_z_base % 0x7fffffff).try_into().unwrap();
+            let mut area_z: u32 = abs_value(area_z_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.z < 0) {
                 area_z = 0xffffffff - area_z;
             }
