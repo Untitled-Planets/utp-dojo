@@ -34,6 +34,7 @@ pub mod GameActions {
     // We'll implement our own bitwise operations
     
     use dojo::world::world;
+    use dojo::world::IWorldDispatcherTrait;
     use starknet::get_block_timestamp;
     use core::num::traits::Pow;
     use core::num::traits::Sqrt;
@@ -647,8 +648,8 @@ pub mod GameActions {
 
         // TODO: replace with a real world resource ownership check (is_owner).
         fn is_deployer(self: @ContractState, caller: ContractAddress) -> bool {
-            let _ = caller;
-            true
+            let world = self.world_default();
+            return world.dispatcher.is_owner(world.namespace_hash, caller);
         }
 
         fn load_config(self: @ContractState) -> GameConfig {
