@@ -2,6 +2,7 @@ use crate::models::{Vec3};
 
 #[starknet::interface]
 pub trait IGameActions<T> {
+    fn ship_purchase(ref self: T);
     fn ship_spawn(ref self: T, spawn_pos: Vec3);
     fn ship_despawn(ref self: T);
     fn ship_board(ref self: T);
@@ -156,6 +157,10 @@ pub mod GameActions {
     const SHIP_SPEED: i128 = 100 * FP_UNIT;
     const SHIP_HYPER_SPEED: i128 = 1000 * FP_UNIT;
 
+    const SHIP_PURCHASE_ITEM_TYPE: u16 = 1;
+    const SHIP_PURCHASE_ITEM_BALANCE: u64 = 10;
+    const SHIP_DEFAULT_CAPACITY: u32 = 1;
+
     pub mod ShipFlags {
         pub const Spawned: u8 = 1;
         pub const Landed: u8 = 2;
@@ -169,6 +174,28 @@ pub mod GameActions {
 
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
+
+        fn ship_purchase(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player_id = get_caller_address();
+
+            let existing_ship : Spaceship = world.read_model(player_id);
+            assert(existing_ship.owner != player_id, 'AlreadyOwnsShip');
+
+            let mut payment_item : InventoryItem = world.read_model((player_id, SHIP_PURCHASE_ITEM_TYPE));
+            assert(payment_item.count >= SHIP_PURCHASE_ITEM_BALANCE, 'InsufficientBalance');
+
+            payment_item.count = payment_item.count - SHIP_PURCHASE_ITEM_BALANCE;
+            world.write_model(@payment_item);
+
+            let new_ship = Spaceship {
+                owner: player_id,
+                capacity: SHIP_DEFAULT_CAPACITY,
+                reference_body: DEFAULT_REFERENCE_BODY_ID,
+                status_flags: 0,
+            };
+            world.write_model(@new_ship);
+        }
 
         fn ship_spawn(ref self: ContractState, spawn_pos: Vec3) {
             let mut world = self.world_default();
@@ -223,7 +250,8 @@ pub mod GameActions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(player_id);
-            
+
+            assert(ship.owner == player_id, 'NotOwner');
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'ShipNotSpawned');
             //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipAlreadyOccupied');
@@ -252,6 +280,7 @@ pub mod GameActions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(player_id);
+            assert(ship.owner == player_id, 'NotOwner');
             //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'ShipNotOccupied');
             // Get ship position to check last motion time
@@ -292,6 +321,7 @@ pub mod GameActions {
             let player_id = get_caller_address();
             let ship : Spaceship = world.read_model(player_id);
 
+            assert(ship.owner == player_id, 'NotOwner');
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
             if (p_hyperspeed) {
@@ -330,6 +360,7 @@ pub mod GameActions {
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(player_id);
 
+            assert(ship.owner == player_id, 'NotOwner');
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
