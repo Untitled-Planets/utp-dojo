@@ -2,6 +2,17 @@ use crate::models::{Vec3};
 
 #[starknet::interface]
 pub trait IGameActions<T> {
+    fn set_config(
+        ref self: T,
+        player_walking_speed: i128,
+        ship_speed: i128,
+        ship_hyper_speed: i128,
+        area_size: i128,
+        ship_purchase_item_type: u16,
+        ship_purchase_item_balance: u64,
+        max_item_pickup_d2: i128,
+        max_spawn_distance_squared: i128,
+    );
     fn ship_purchase(ref self: T);
     fn ship_spawn(ref self: T, spawn_pos: Vec3);
     fn ship_despawn(ref self: T);
@@ -19,7 +30,7 @@ pub trait IGameActions<T> {
 #[dojo::contract]
 pub mod GameActions {
     use super::IGameActions;
-    use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
+    use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem, GameConfig};
     // We'll implement our own bitwise operations
     
     use dojo::world::world;
@@ -161,6 +172,8 @@ pub mod GameActions {
     const SHIP_PURCHASE_ITEM_BALANCE: u64 = 10;
     const SHIP_DEFAULT_CAPACITY: u32 = 1;
 
+    const CONFIG_ID: u8 = 0;
+
     pub mod ShipFlags {
         pub const Spawned: u8 = 1;
         pub const Landed: u8 = 2;
@@ -175,17 +188,47 @@ pub mod GameActions {
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
 
+        fn set_config(
+            ref self: ContractState,
+            player_walking_speed: i128,
+            ship_speed: i128,
+            ship_hyper_speed: i128,
+            area_size: i128,
+            ship_purchase_item_type: u16,
+            ship_purchase_item_balance: u64,
+            max_item_pickup_d2: i128,
+            max_spawn_distance_squared: i128,
+        ) {
+            let caller = get_caller_address();
+            assert(self.is_deployer(caller), 'NotDeployer');
+
+            let mut world = self.world_default();
+            let config = GameConfig {
+                id: CONFIG_ID,
+                player_walking_speed: player_walking_speed,
+                ship_speed: ship_speed,
+                ship_hyper_speed: ship_hyper_speed,
+                area_size: area_size,
+                ship_purchase_item_type: ship_purchase_item_type,
+                ship_purchase_item_balance: ship_purchase_item_balance,
+                max_item_pickup_d2: max_item_pickup_d2,
+                max_spawn_distance_squared: max_spawn_distance_squared,
+            };
+            world.write_model(@config);
+        }
+
         fn ship_purchase(ref self: ContractState) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
 
             let existing_ship : Spaceship = world.read_model(player_id);
             assert(existing_ship.owner != player_id, 'AlreadyOwnsShip');
 
-            let mut payment_item : InventoryItem = world.read_model((player_id, SHIP_PURCHASE_ITEM_TYPE));
-            assert(payment_item.count >= SHIP_PURCHASE_ITEM_BALANCE, 'InsufficientBalance');
+            let mut payment_item : InventoryItem = world.read_model((player_id, config.ship_purchase_item_type));
+            assert(payment_item.count >= config.ship_purchase_item_balance, 'InsufficientBalance');
 
-            payment_item.count = payment_item.count - SHIP_PURCHASE_ITEM_BALANCE;
+            payment_item.count = payment_item.count - config.ship_purchase_item_balance;
             world.write_model(@payment_item);
 
             let new_ship = Spaceship {
@@ -198,6 +241,7 @@ pub mod GameActions {
         }
 
         fn ship_spawn(ref self: ContractState, spawn_pos: Vec3) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let player : Player = world.read_model(player_id);
@@ -207,12 +251,12 @@ pub mod GameActions {
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
 
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
-            
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, config.player_walking_speed.try_into().unwrap());
+
             let distance_squared = vec3_fp40_dist_sq(spawn_pos, player_pos);
             println!("model pos is {},{},{}", player_pos.x, player_pos.y, player_pos.z);
             println!("requested ship spawn distance {}", distance_squared);
-            assert(distance_squared <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
+            assert(distance_squared <= config.max_spawn_distance_squared, 'TooFar');
 
             if ((ship.status_flags & ShipFlags::Landed) == 0) {
                 ship.status_flags += ShipFlags::Landed;
@@ -247,6 +291,7 @@ pub mod GameActions {
         }
 
         fn ship_board(ref self: ContractState) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(player_id);
@@ -263,10 +308,10 @@ pub mod GameActions {
             // check ship position agains player position
             let ship_pos : ShipPosition = world.read_model(player_id);
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
-            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap()); 
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, config.player_walking_speed.try_into().unwrap());
 
             let dist2 = vec3_fp40_dist_sq(player_pos, ship_pos.pos);
-            assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
+            assert(dist2 <= config.max_spawn_distance_squared, 'TooFar');
 
             ship.status_flags += ShipFlags::Occupied;
             world.write_model(@ship);
@@ -277,6 +322,7 @@ pub mod GameActions {
         }
 
         fn ship_unboard(ref self: ContractState, pos: Vec3) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(player_id);
@@ -286,16 +332,16 @@ pub mod GameActions {
             // Get ship position to check last motion time
             //let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             //assert(ship_pos.speed > 0, 'ShipMoving');
-            
+
             let ship_pos_model : ShipPosition = world.read_model(player_id);
-            let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
+            let mut speed_mode : u64 = config.ship_speed.try_into().unwrap();
             if (ship_pos_model.hyperspeed) {
-                speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
+                speed_mode = config.ship_hyper_speed.try_into().unwrap();
             };
             let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
 
             let dist2 = vec3_fp40_dist_sq(ship_pos, pos);
-            assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
+            assert(dist2 <= config.max_spawn_distance_squared, 'TooFar');
 
             let mut player : Player = world.read_model(player_id);
             assert((player.status_flags & PlayerFlags::OnFoot) == 0, 'PlayerWalking');
@@ -317,6 +363,7 @@ pub mod GameActions {
         }
 
         fn ship_move(ref self: ContractState, destination: Vec3, p_hyperspeed: bool) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let ship : Spaceship = world.read_model(player_id);
@@ -330,9 +377,9 @@ pub mod GameActions {
 
             // Get current position from model
             let mut ship_pos_model : ShipPosition = world.read_model(player_id);
-            let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
+            let mut speed_mode : u64 = config.ship_speed.try_into().unwrap();
             if (ship_pos_model.hyperspeed) {
-                speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
+                speed_mode = config.ship_hyper_speed.try_into().unwrap();
             };
 
             let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
@@ -411,6 +458,7 @@ pub mod GameActions {
 
         fn player_move(ref self: ContractState, dst: Vec3) {
             println!("-- player_move start");
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
@@ -426,7 +474,7 @@ pub mod GameActions {
             println!("model dir is {},{},{}", player_pos_model.dir.x, player_pos_model.dir.y, player_pos_model.dir.z);
             println!("model pos is {},{},{}", player_pos_model.pos.x, player_pos_model.pos.y, player_pos_model.pos.z);
             println!("model dst is {},{},{}", player_pos_model.dest.x, player_pos_model.dest.y, player_pos_model.dest.z);
-            let model_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
+            let model_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, config.player_walking_speed.try_into().unwrap());
             println!("current pos to {},{},{}", model_pos.x, model_pos.y, model_pos.z);
 
             // calculate new dir
@@ -453,25 +501,26 @@ pub mod GameActions {
         }
 
         fn item_collect(ref self: ContractState, collectable_type: u16, collectable_index: u8) {
+            let config = self.load_config();
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let player : Player = world.read_model(player_id);
             let planet : Planet = world.read_model(player.reference_body);
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, config.player_walking_speed.try_into().unwrap());
 
-            let area_x_base = player_pos.x / (AREA_SIZE * FP_UNIT).into(); 
+            let area_x_base = player_pos.x / (config.area_size * FP_UNIT).into();
             let mut area_x: u32 = abs_value(area_x_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.x < 0) {
                 area_x = 0xffffffff - area_x;
             }
 
-            let area_y_base = player_pos.y / (AREA_SIZE * FP_UNIT).into(); 
+            let area_y_base = player_pos.y / (config.area_size * FP_UNIT).into();
             let mut area_y: u32 = abs_value(area_y_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.y < 0) {
                 area_y = 0xffffffff - area_y;
             }
-            let area_z_base = player_pos.z / (AREA_SIZE * FP_UNIT).into(); 
+            let area_z_base = player_pos.z / (config.area_size * FP_UNIT).into();
             let mut area_z: u32 = abs_value(area_z_base % 0x7fffffff).try_into().unwrap();
             if (player_pos.z < 0) {
                 area_z = 0xffffffff - area_z;
@@ -517,15 +566,15 @@ pub mod GameActions {
             let span_1_i128: i128 = (*span.at(1)).try_into().unwrap();
             let span_2_i128: i128 = (*span.at(2)).try_into().unwrap();
             
-            let mut offset_x = (span_0_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let mut offset_x = (span_0_i128 * FP_UNIT / 0xFFFFFFFF_i128) * config.area_size;
             if (player_pos.x < 0) {
                 offset_x = offset_x * -1;
             }
-            let mut offset_y = (span_1_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let mut offset_y = (span_1_i128 * FP_UNIT / 0xFFFFFFFF_i128) * config.area_size;
             if (player_pos.y < 0) {
                 offset_y = offset_y * -1;
             }
-            let mut offset_z = (span_2_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let mut offset_z = (span_2_i128 * FP_UNIT / 0xFFFFFFFF_i128) * config.area_size;
             if (player_pos.z < 0) {
                 offset_z = offset_z * -1;
             }
@@ -533,9 +582,9 @@ pub mod GameActions {
             println!("area_base {}, {}, {}", area_x_base, area_y_base, area_z_base);
             println!("spawn offset {}, {}, {}", offset_x, offset_y, offset_z);
             let item_pos = Vec3 {
-                x: area_x_base * AREA_SIZE * FP_UNIT + offset_x,
-                y: area_y_base * AREA_SIZE * FP_UNIT + offset_y,
-                z: area_z_base * AREA_SIZE * FP_UNIT + offset_z,
+                x: area_x_base * config.area_size * FP_UNIT + offset_x,
+                y: area_y_base * config.area_size * FP_UNIT + offset_y,
+                z: area_z_base * config.area_size * FP_UNIT + offset_z,
             };
 
             println!("item pos {}, {}, {}", item_pos.x, item_pos.y, item_pos.z)
@@ -543,7 +592,7 @@ pub mod GameActions {
 
             let d2 = vec3_fp40_dist_sq(item_pos, player_pos);
             println!("distance sq {}", d2)
-            assert(d2 <= MAX_ITEM_PICKUP_D2, 'TooFar');
+            assert(d2 <= config.max_item_pickup_d2, 'TooFar');
 
             // Get existing tracker or create a new one
             let mut tracker : CollectableTracker = world.read_model((area_id, player.reference_body, collectable_type));
@@ -594,6 +643,31 @@ pub mod GameActions {
         /// can't be const.
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"utp_dojo")
+        }
+
+        // TODO: replace with a real world resource ownership check (is_owner).
+        fn is_deployer(self: @ContractState, caller: ContractAddress) -> bool {
+            let _ = caller;
+            true
+        }
+
+        fn load_config(self: @ContractState) -> GameConfig {
+            let world = self.world_default();
+            let stored : GameConfig = world.read_model(CONFIG_ID);
+            if (stored.player_walking_speed != 0) {
+                return stored;
+            }
+            GameConfig {
+                id: CONFIG_ID,
+                player_walking_speed: PLAYER_WALKING_SPEED,
+                ship_speed: SHIP_SPEED,
+                ship_hyper_speed: SHIP_HYPER_SPEED,
+                area_size: AREA_SIZE,
+                ship_purchase_item_type: SHIP_PURCHASE_ITEM_TYPE,
+                ship_purchase_item_balance: SHIP_PURCHASE_ITEM_BALANCE,
+                max_item_pickup_d2: MAX_ITEM_PICKUP_D2,
+                max_spawn_distance_squared: MAX_SPAWN_DISTANCE_SQUARED,
+            }
         }
     }
 }

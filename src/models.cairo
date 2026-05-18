@@ -91,3 +91,19 @@ pub struct Vec3 {
     pub y: i128,
     pub z: i128,
 }
+
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::model]
+pub struct GameConfig {
+    #[key]
+    pub id: u8,
+    pub player_walking_speed: i128,
+    pub ship_speed: i128,
+    pub ship_hyper_speed: i128,
+    pub area_size: i128,
+    pub ship_purchase_item_type: u16,
+    pub ship_purchase_item_balance: u64,
+    pub max_item_pickup_d2: i128,
+    pub max_spawn_distance_squared: i128,
+}
